@@ -44,8 +44,20 @@ export function useMessages(conversationId: string | null) {
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
+        (payload) => {
+          const newMessage = payload.new as Message;
+          // Instantly add message to cache without refetching
+          queryClient.setQueryData<Message[]>(
+            ['messages', conversationId],
+            (oldMessages) => {
+              if (!oldMessages) return [newMessage];
+              // Avoid duplicates
+              if (oldMessages.some((m) => m.id === newMessage.id)) {
+                return oldMessages;
+              }
+              return [...oldMessages, newMessage];
+            }
+          );
         }
       )
       .subscribe();
