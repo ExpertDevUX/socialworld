@@ -15,7 +15,11 @@ import {
   Power,
   BarChart3,
   MessageSquare,
-  TrendingUp
+  TrendingUp,
+  CheckSquare,
+  History,
+  UserX,
+  UserPlus
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -24,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -47,6 +52,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin, useAllUserRoles, useAssignRole, useRemoveRole, AppRole } from "@/hooks/useRoles";
 import { useAllProfiles } from "@/hooks/useProfile";
@@ -58,8 +64,10 @@ import {
   useDeleteAdvertisement 
 } from "@/hooks/useAdvertisements";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useActivityLogs, useLogActivity } from "@/hooks/useActivityLogs";
 import Header from "@/components/Header";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { format } from "date-fns";
 
 const Admin = () => {
   const { t } = useTranslation();
@@ -70,6 +78,8 @@ const Admin = () => {
   const [userSearch, setUserSearch] = useState("");
   const [adDialogOpen, setAdDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<any>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [bulkRole, setBulkRole] = useState<AppRole | "none">("none");
 
   // Hooks for data
   const { data: profiles = [] } = useAllProfiles();
@@ -77,6 +87,7 @@ const Admin = () => {
   const { data: posts = [] } = usePosts();
   const { data: advertisements = [] } = useAllAdvertisements();
   const { data: analytics } = useAnalytics();
+  const { data: activityLogs = [] } = useActivityLogs();
   
   const assignRole = useAssignRole();
   const removeRole = useRemoveRole();
@@ -84,6 +95,7 @@ const Admin = () => {
   const createAd = useCreateAdvertisement();
   const updateAd = useUpdateAdvertisement();
   const deleteAd = useDeleteAdvertisement();
+  const logActivity = useLogActivity();
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
 
@@ -133,13 +145,79 @@ const Admin = () => {
   };
 
   const handleRoleChange = async (userId: string, role: AppRole | "none") => {
+    const profile = profiles.find(p => p.user_id === userId);
     try {
       if (role === "none") {
         await removeRole.mutateAsync(userId);
+        await logActivity.mutateAsync({
+          actionType: 'role_removed',
+          targetType: 'user',
+          targetId: userId,
+          details: { username: profile?.username }
+        });
       } else {
         await assignRole.mutateAsync({ userId, role });
+        await logActivity.mutateAsync({
+          actionType: 'role_assigned',
+          targetType: 'user',
+          targetId: userId,
+          details: { username: profile?.username, role }
+        });
       }
       toast({ title: t("common.success"), description: t("admin.roleUpdated") });
+    } catch (error: any) {
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(prev => [...prev, userId]);
+    } else {
+      setSelectedUsers(prev => prev.filter(id => id !== userId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(filteredProfiles.map(p => p.user_id));
+    } else {
+      setSelectedUsers([]);
+    }
+  };
+
+  const handleBulkRoleChange = async () => {
+    if (selectedUsers.length === 0) return;
+    
+    try {
+      const affectedUsers = profiles
+        .filter(p => selectedUsers.includes(p.user_id))
+        .map(p => p.username);
+
+      for (const userId of selectedUsers) {
+        if (bulkRole === "none") {
+          await removeRole.mutateAsync(userId);
+        } else {
+          await assignRole.mutateAsync({ userId, role: bulkRole });
+        }
+      }
+
+      await logActivity.mutateAsync({
+        actionType: bulkRole === "none" ? 'bulk_role_removed' : 'bulk_role_assigned',
+        targetType: 'multiple',
+        details: { 
+          userCount: selectedUsers.length,
+          usernames: affectedUsers,
+          role: bulkRole === "none" ? null : bulkRole
+        }
+      });
+
+      toast({ 
+        title: t("common.success"), 
+        description: t("admin.bulkRoleUpdated", { count: selectedUsers.length }) 
+      });
+      setSelectedUsers([]);
+      setBulkRole("none");
     } catch (error: any) {
       toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     }
@@ -148,6 +226,11 @@ const Admin = () => {
   const handleDeletePost = async (postId: string) => {
     try {
       await deletePost.mutateAsync(postId);
+      await logActivity.mutateAsync({
+        actionType: 'post_deleted',
+        targetType: 'post',
+        targetId: postId
+      });
       toast({ title: t("common.success"), description: t("admin.postDeleted") });
     } catch (error: any) {
       toast({ title: t("common.error"), description: error.message, variant: "destructive" });
@@ -158,8 +241,20 @@ const Admin = () => {
     try {
       if (editingAd) {
         await updateAd.mutateAsync({ id: editingAd.id, ...adForm });
+        await logActivity.mutateAsync({
+          actionType: 'ad_updated',
+          targetType: 'advertisement',
+          targetId: editingAd.id,
+          details: { title: adForm.title }
+        });
       } else {
-        await createAd.mutateAsync({ ...adForm, created_by: null });
+        const result = await createAd.mutateAsync({ ...adForm, created_by: null });
+        await logActivity.mutateAsync({
+          actionType: 'ad_created',
+          targetType: 'advertisement',
+          targetId: result.id,
+          details: { title: adForm.title }
+        });
       }
       setAdDialogOpen(false);
       setEditingAd(null);
@@ -193,8 +288,15 @@ const Admin = () => {
   };
 
   const handleDeleteAd = async (id: string) => {
+    const ad = advertisements.find(a => a.id === id);
     try {
       await deleteAd.mutateAsync(id);
+      await logActivity.mutateAsync({
+        actionType: 'ad_deleted',
+        targetType: 'advertisement',
+        targetId: id,
+        details: { title: ad?.title }
+      });
       toast({ title: t("common.success"), description: t("admin.adDeleted") });
     } catch (error: any) {
       toast({ title: t("common.error"), description: error.message, variant: "destructive" });
@@ -207,6 +309,51 @@ const Admin = () => {
       toast({ title: t("common.success") });
     } catch (error: any) {
       toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+    }
+  };
+
+  const getActionIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'role_assigned':
+      case 'bulk_role_assigned':
+        return <UserPlus className="w-4 h-4 text-green-500" />;
+      case 'role_removed':
+      case 'bulk_role_removed':
+        return <UserX className="w-4 h-4 text-orange-500" />;
+      case 'post_deleted':
+        return <Trash2 className="w-4 h-4 text-destructive" />;
+      case 'ad_created':
+        return <Plus className="w-4 h-4 text-green-500" />;
+      case 'ad_updated':
+        return <Edit className="w-4 h-4 text-blue-500" />;
+      case 'ad_deleted':
+        return <Trash2 className="w-4 h-4 text-destructive" />;
+      default:
+        return <History className="w-4 h-4" />;
+    }
+  };
+
+  const getActionDescription = (log: any) => {
+    const details = log.details || {};
+    switch (log.action_type) {
+      case 'role_assigned':
+        return t("admin.logRoleAssigned", { username: details.username, role: details.role });
+      case 'role_removed':
+        return t("admin.logRoleRemoved", { username: details.username });
+      case 'bulk_role_assigned':
+        return t("admin.logBulkRoleAssigned", { count: details.userCount, role: details.role });
+      case 'bulk_role_removed':
+        return t("admin.logBulkRoleRemoved", { count: details.userCount });
+      case 'post_deleted':
+        return t("admin.logPostDeleted");
+      case 'ad_created':
+        return t("admin.logAdCreated", { title: details.title });
+      case 'ad_updated':
+        return t("admin.logAdUpdated", { title: details.title });
+      case 'ad_deleted':
+        return t("admin.logAdDeleted", { title: details.title });
+      default:
+        return log.action_type;
     }
   };
 
@@ -225,7 +372,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               {t("admin.analytics")}
@@ -241,6 +388,10 @@ const Admin = () => {
             <TabsTrigger value="ads" className="flex items-center gap-2">
               <Megaphone className="w-4 h-4" />
               {t("admin.ads")}
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              {t("admin.activityLogs")}
             </TabsTrigger>
           </TabsList>
 
@@ -381,26 +532,67 @@ const Admin = () => {
               <CardHeader>
                 <CardTitle>{t("admin.userManagement")}</CardTitle>
                 <p className="text-sm text-muted-foreground">{t("admin.userManagementDesc")}</p>
-                <div className="relative mt-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t("users.searchUsers")}
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder={t("users.searchUsers")}
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
+                {/* Bulk Actions */}
+                {selectedUsers.length > 0 && (
+                  <div className="flex items-center gap-3 mt-4 p-3 bg-muted rounded-lg">
+                    <CheckSquare className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium">
+                      {t("admin.selectedUsers", { count: selectedUsers.length })}
+                    </span>
+                    <Select value={bulkRole} onValueChange={(v) => setBulkRole(v as AppRole | "none")}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder={t("admin.selectRole")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("admin.noRole")}</SelectItem>
+                        <SelectItem value="user">{t("admin.roleUser")}</SelectItem>
+                        <SelectItem value="moderator">{t("admin.roleModerator")}</SelectItem>
+                        <SelectItem value="admin">{t("admin.roleAdmin")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" onClick={handleBulkRoleChange}>
+                      {t("admin.applyBulkAction")}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelectedUsers([])}>
+                      {t("common.cancel")}
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
+                  {/* Select All */}
+                  <div className="flex items-center gap-3 p-2 border-b">
+                    <Checkbox
+                      checked={selectedUsers.length === filteredProfiles.length && filteredProfiles.length > 0}
+                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                    />
+                    <span className="text-sm text-muted-foreground">{t("admin.selectAll")}</span>
+                  </div>
                   {filteredProfiles.map((profile) => {
                     const role = getUserRole(profile.user_id);
+                    const isSelected = selectedUsers.includes(profile.user_id);
                     return (
                       <div
                         key={profile.id}
-                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+                        className={`flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors ${isSelected ? 'bg-accent/30 border-primary' : ''}`}
                       >
                         <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleSelectUser(profile.user_id, checked as boolean)}
+                          />
                           <Avatar>
                             <AvatarFallback className="bg-primary text-primary-foreground">
                               {profile.display_name[0]?.toUpperCase()}
@@ -689,6 +881,56 @@ const Admin = () => {
                     </p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Activity Logs Tab */}
+          <TabsContent value="logs">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5" />
+                  {t("admin.activityLogs")}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{t("admin.activityLogsDesc")}</p>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-3">
+                    {activityLogs.map((log) => {
+                      const admin = profiles.find(p => p.user_id === log.admin_id);
+                      return (
+                        <div
+                          key={log.id}
+                          className="flex items-start gap-3 p-3 rounded-lg border hover:bg-accent/30 transition-colors"
+                        >
+                          <div className="mt-1">
+                            {getActionIcon(log.action_type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm">
+                              <span className="font-medium">{admin?.display_name || "Admin"}</span>
+                              {" "}
+                              <span className="text-muted-foreground">{getActionDescription(log)}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {format(new Date(log.created_at), "MMM d, yyyy 'at' h:mm a")}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="shrink-0">
+                            {log.target_type}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                    {activityLogs.length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">
+                        {t("admin.noActivityLogs")}
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
