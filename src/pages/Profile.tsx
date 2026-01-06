@@ -31,6 +31,7 @@ import { useFriendships, useFriendRequests } from "@/hooks/useFriendships";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import DocumentsSection from "@/components/DocumentsSection";
+import FindFriendsDialog from "@/components/FindFriendsDialog";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const ProfilePage = () => {
   
   const [activeSection, setActiveSection] = useState<"feed" | "saved" | "documents">("feed");
   const [newPostContent, setNewPostContent] = useState("");
+  const [findFriendsOpen, setFindFriendsOpen] = useState(false);
 
   const acceptedFriends = friendships.filter(f => f.status === "accepted");
 
@@ -193,7 +195,11 @@ const ProfilePage = () => {
               <CardTitle className="text-sm text-sidebar-muted uppercase">Social</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              <Button variant="ghost" className="w-full justify-start">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => setFindFriendsOpen(true)}
+              >
                 <UserPlus className="w-5 h-5 mr-3" />
                 <div className="text-left">
                   <p className="font-medium">Find Friends</p>
@@ -202,6 +208,12 @@ const ProfilePage = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Find Friends Dialog */}
+          <FindFriendsDialog 
+            open={findFriendsOpen} 
+            onOpenChange={setFindFriendsOpen} 
+          />
         </div>
 
         {/* Main Content */}
