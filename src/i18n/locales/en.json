@@ -171,6 +171,7 @@
     "ads": "Ads",
     "analytics": "Analytics",
     "userManagement": "User Management",
+    "userManagementDesc": "Manage user roles and permissions",
     "contentManagement": "Content Management",
     "adManagement": "Advertisement Management",
     "roleUpdated": "Role updated successfully",
@@ -207,7 +208,9 @@
     "roleDistribution": "Role Distribution",
     "quickStats": "Quick Stats",
     "adminCount": "Admins",
-    "moderatorCount": "Moderators"
+    "moderatorCount": "Moderators",
+    "viewProfile": "View Profile",
+    "removeRole": "Remove Role"
   },
   "notifications": {
     "profileUpdated": "Profile updated",

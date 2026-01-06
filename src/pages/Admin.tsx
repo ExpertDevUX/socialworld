@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Users, 
+  User,
   FileText, 
   Megaphone, 
   ArrowLeft,
@@ -379,7 +380,8 @@ const Admin = () => {
             <Card>
               <CardHeader>
                 <CardTitle>{t("admin.userManagement")}</CardTitle>
-                <div className="relative">
+                <p className="text-sm text-muted-foreground">{t("admin.userManagementDesc")}</p>
+                <div className="relative mt-2">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder={t("users.searchUsers")}
@@ -396,7 +398,7 @@ const Admin = () => {
                     return (
                       <div
                         key={profile.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <Avatar>
@@ -409,28 +411,76 @@ const Admin = () => {
                             <p className="text-sm text-muted-foreground">@{profile.username}</p>
                           </div>
                           {role && (
-                            <Badge variant={role === "admin" ? "default" : "secondary"}>
+                            <Badge variant={role === "admin" ? "default" : role === "moderator" ? "secondary" : "outline"}>
                               {role}
                             </Badge>
                           )}
                         </div>
-                        <Select
-                          value={role || "none"}
-                          onValueChange={(value) => handleRoleChange(profile.user_id, value as AppRole | "none")}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">{t("admin.noRole")}</SelectItem>
-                            <SelectItem value="user">{t("admin.roleUser")}</SelectItem>
-                            <SelectItem value="moderator">{t("admin.roleModerator")}</SelectItem>
-                            <SelectItem value="admin">{t("admin.roleAdmin")}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={role || "none"}
+                            onValueChange={(value) => handleRoleChange(profile.user_id, value as AppRole | "none")}
+                          >
+                            <SelectTrigger className="w-36">
+                              <Shield className="w-4 h-4 mr-2" />
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                <span className="flex items-center gap-2">
+                                  <Users className="w-4 h-4" />
+                                  {t("admin.noRole")}
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="user">
+                                <span className="flex items-center gap-2">
+                                  <User className="w-4 h-4" />
+                                  {t("admin.roleUser")}
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="moderator">
+                                <span className="flex items-center gap-2">
+                                  <Shield className="w-4 h-4" />
+                                  {t("admin.roleModerator")}
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="admin">
+                                <span className="flex items-center gap-2">
+                                  <Shield className="w-4 h-4 text-primary" />
+                                  {t("admin.roleAdmin")}
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/profile/${profile.user_id}`)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                {t("admin.viewProfile")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleRoleChange(profile.user_id, "none")}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                {t("admin.removeRole")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     );
                   })}
+                  {filteredProfiles.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      {t("users.noUsersFound")}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
