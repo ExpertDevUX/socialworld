@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, MessageSquare, Users, UserPlus, MoreVertical } from "lucide-react";
+import { Send, MessageSquare, Users, UserPlus, MoreVertical, Phone, Video } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useConversations } from "@/hooks/useConversations";
 import { useConversationParticipants } from "@/hooks/useConversationParticipants";
 import AddGroupMembersDialog from "./AddGroupMembersDialog";
 import UserProfileDialog from "./UserProfileDialog";
+import VideoCallDialog from "./VideoCallDialog";
 
 interface ChatMainProps {
   conversationId: string | null;
@@ -28,6 +29,8 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
   const [addMembersOpen, setAddMembersOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [callDialogOpen, setCallDialogOpen] = useState(false);
+  const [isVideoCall, setIsVideoCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { data: messages = [] } = useMessages(conversationId);
@@ -84,6 +87,11 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
     }
   };
 
+  const handleStartCall = (video: boolean) => {
+    setIsVideoCall(video);
+    setCallDialogOpen(true);
+  };
+
   if (!conversationId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-background p-4 ml-0 md:ml-0">
@@ -125,21 +133,43 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
             </div>
           </div>
           
-          {currentConversation.is_group && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setAddMembersOpen(true)}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  {t('chat.addMembers')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Voice Call Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleStartCall(false)}
+              title={t('chat.voiceCall')}
+            >
+              <Phone className="w-5 h-5" />
+            </Button>
+            
+            {/* Video Call Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleStartCall(true)}
+              title={t('chat.videoCall')}
+            >
+              <Video className="w-5 h-5" />
+            </Button>
+
+            {currentConversation.is_group && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setAddMembersOpen(true)}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    {t('chat.addMembers')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       )}
 
@@ -223,6 +253,16 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
         profile={selectedProfile}
         onStartChat={() => {}}
       />
+
+      {/* Video/Voice Call Dialog */}
+      {conversationId && (
+        <VideoCallDialog
+          open={callDialogOpen}
+          onOpenChange={setCallDialogOpen}
+          channelName={conversationId}
+          isVideoCall={isVideoCall}
+        />
+      )}
     </div>
   );
 };
