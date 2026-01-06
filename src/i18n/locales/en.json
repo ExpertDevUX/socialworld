@@ -289,6 +289,12 @@
     "respondFailed": "Failed to respond to friend request",
     "unknownUser": "Unknown User"
   },
+  "friendsList": {
+    "title": "Friends",
+    "noFriends": "No friends yet. Find and add friends to see them here!",
+    "online": "Online",
+    "offline": "Offline"
+  },
   "verification": {
     "emailSent": "Verification Email Sent",
     "emailSentDesc": "Please check your email to verify your account before signing in",
