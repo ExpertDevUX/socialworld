@@ -91,7 +91,12 @@
     "members": "{{count}} member",
     "members_plural": "{{count}} members",
     "addMembers": "Add Members",
-    "group": "Group"
+    "group": "Group",
+    "voiceCall": "Voice Call",
+    "videoCall": "Video Call",
+    "connecting": "Connecting...",
+    "waitingForParticipants": "Waiting for other participants...",
+    "callEnded": "Call ended"
   },
   "profile": {
     "title": "Profile",
