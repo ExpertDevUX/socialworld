@@ -167,7 +167,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
             placeholder={t('chat.searchConversations')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-sidebar-accent border-0 text-sidebar-foreground placeholder:text-sidebar-muted"
+            className="pl-9 bg-sidebar-accent border border-sidebar-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
