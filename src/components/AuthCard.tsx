@@ -8,10 +8,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { z } from "zod";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 type AuthMode = "email" | "phone";
-type AuthView = "signin" | "signup";
+type AuthView = "signin" | "signup" | "verify-phone";
+
+// Validation schemas
+const emailSchema = z.string().email("Please enter a valid email address");
+const phoneSchema = z.string().regex(/^\+[1-9]\d{6,14}$/, "Please enter a valid phone number with country code (e.g., +1234567890)");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const usernameSchema = z.string().min(3, "Username must be at least 3 characters").max(30, "Username must be less than 30 characters");
 
 const AuthCard = () => {
   const [authMode, setAuthMode] = useState<AuthMode>("email");
@@ -20,20 +32,54 @@ const AuthCard = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithOtp, verifyOtp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const validateInputs = (): boolean => {
+    try {
+      if (authMode === "email") {
+        emailSchema.parse(email);
+        passwordSchema.parse(password);
+        if (authView === "signup") {
+          usernameSchema.parse(username);
+        }
+      } else {
+        phoneSchema.parse(phone);
+        if (authView === "signup") {
+          usernameSchema.parse(username);
+        }
+      }
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: t("common.error"),
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      }
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateInputs()) {
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      if (authView === "signin") {
-        const { error } = await signIn(email, password);
+      if (authMode === "phone") {
+        // Phone authentication - send OTP
+        const { error } = await signInWithOtp(phone);
         if (error) {
           toast({
             title: t("common.error"),
@@ -41,31 +87,50 @@ const AuthCard = () => {
             variant: "destructive",
           });
         } else {
-          navigate("/chat");
+          toast({
+            title: t("verification.otpSent"),
+            description: t("verification.otpSentDesc", { phone }),
+          });
+          setAuthView("verify-phone");
         }
       } else {
-        if (!username.trim()) {
-          toast({
-            title: t("auth.username"),
-            description: t("auth.username") + " " + t("common.error").toLowerCase(),
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-        const { error } = await signUp(email, password, username);
-        if (error) {
-          toast({
-            title: t("common.error"),
-            description: error.message,
-            variant: "destructive",
-          });
+        // Email authentication
+        if (authView === "signin") {
+          const { error } = await signIn(email, password);
+          if (error) {
+            toast({
+              title: t("common.error"),
+              description: error.message,
+              variant: "destructive",
+            });
+          } else {
+            navigate("/chat");
+          }
         } else {
-          toast({
-            title: t("common.success"),
-            description: t("auth.signInToContinue"),
-          });
-          navigate("/chat");
+          if (!username.trim()) {
+            toast({
+              title: t("auth.username"),
+              description: t("auth.username") + " " + t("common.error").toLowerCase(),
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+          const { error } = await signUp(email, password, username);
+          if (error) {
+            toast({
+              title: t("common.error"),
+              description: error.message,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: t("verification.emailSent"),
+              description: t("verification.emailSentDesc"),
+            });
+            // Stay on the page so user knows to verify email
+            setAuthView("signin");
+          }
         }
       }
     } catch (error) {
@@ -78,6 +143,132 @@ const AuthCard = () => {
       setLoading(false);
     }
   };
+
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) {
+      toast({
+        title: t("common.error"),
+        description: "Please enter a 6-digit code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await verifyOtp(phone, otp);
+      if (error) {
+        toast({
+          title: t("common.error"),
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        navigate("/chat");
+      }
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: "Failed to verify code",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithOtp(phone);
+      if (error) {
+        toast({
+          title: t("common.error"),
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: t("verification.otpSent"),
+          description: t("verification.otpSentDesc", { phone }),
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Phone OTP verification view
+  if (authView === "verify-phone") {
+    return (
+      <Card className="w-full max-w-md shadow-lg border-0">
+        <CardContent className="pt-8 pb-6 px-8">
+          <div className="flex justify-center mb-4">
+            <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center">
+              <Phone className="w-7 h-7 text-primary-foreground" />
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-center text-foreground mb-1">
+            {t("verification.verifyPhone")}
+          </h2>
+          <p className="text-muted-foreground text-center mb-6">
+            {t("verification.enterOtp")}
+          </p>
+          <p className="text-sm text-center text-muted-foreground mb-4">
+            {phone}
+          </p>
+
+          <div className="flex justify-center mb-6">
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              onChange={setOtp}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+
+          <Button 
+            onClick={handleVerifyOtp} 
+            className="w-full h-11 text-base font-medium mb-3" 
+            disabled={loading || otp.length !== 6}
+          >
+            {loading ? t("common.loading") : t("settings.verify")}
+          </Button>
+
+          <Button 
+            variant="outline" 
+            onClick={handleResendOtp}
+            className="w-full h-11 text-base font-medium"
+            disabled={loading}
+          >
+            {t("verification.resendCode")}
+          </Button>
+
+          <p className="text-center mt-6 text-sm text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthView("signin");
+                setOtp("");
+              }}
+              className="text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              {t("auth.backToLogin")}
+            </button>
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md shadow-lg border-0">
@@ -147,19 +338,45 @@ const AuthCard = () => {
           )}
 
           {authMode === "email" ? (
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">
-                {t("auth.email")}
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-foreground">
+                  {t("auth.email")}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-foreground">
+                    {t("auth.password")}
+                  </Label>
+                  {authView === "signin" && (
+                    <button
+                      type="button"
+                      onClick={() => setForgotPasswordOpen(true)}
+                      className="text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
+                      {t("auth.forgotPassword")}
+                    </button>
+                  )}
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11"
+                />
+              </div>
+            </>
           ) : (
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-foreground">
@@ -168,41 +385,26 @@ const AuthCard = () => {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+1 (555) 000-0000"
+                placeholder="+1234567890"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="h-11"
               />
+              <p className="text-xs text-muted-foreground">
+                {t("settings.includeCountryCode")}
+              </p>
             </div>
           )}
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-foreground">
-                {t("auth.password")}
-              </Label>
-              {authView === "signin" && (
-                <button
-                  type="button"
-                  onClick={() => setForgotPasswordOpen(true)}
-                  className="text-sm text-primary hover:text-primary/80 transition-colors"
-                >
-                  {t("auth.forgotPassword")}
-                </button>
-              )}
-            </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-11"
-            />
-          </div>
-
           <Button type="submit" className="w-full h-11 text-base font-medium" disabled={loading}>
-            {loading ? t("common.loading") : authView === "signin" ? t("auth.signIn") : t("auth.signup")}
+            {loading 
+              ? t("common.loading") 
+              : authMode === "phone" 
+                ? t("settings.sendVerificationCode")
+                : authView === "signin" 
+                  ? t("auth.signIn") 
+                  : t("auth.signup")
+            }
           </Button>
         </form>
 

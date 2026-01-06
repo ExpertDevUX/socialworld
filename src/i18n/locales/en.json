@@ -276,5 +276,29 @@
     "groupCreatedDesc": "\"{{name}}\" has been created successfully",
     "groupCreationFailed": "Failed to create group",
     "tryAgain": "Please try again"
+  },
+  "friendRequests": {
+    "title": "Friend Requests",
+    "noRequests": "No pending friend requests",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "Friend Request Accepted",
+    "acceptedDesc": "You are now friends with {{name}}",
+    "declined": "Friend Request Declined",
+    "declinedDesc": "You declined the friend request from {{name}}",
+    "respondFailed": "Failed to respond to friend request",
+    "unknownUser": "Unknown User"
+  },
+  "verification": {
+    "emailSent": "Verification Email Sent",
+    "emailSentDesc": "Please check your email to verify your account before signing in",
+    "verifyPhone": "Verify Phone",
+    "enterOtp": "Enter the code sent to your phone",
+    "resendCode": "Resend Code",
+    "phoneRequired": "Phone number is required",
+    "invalidPhone": "Please enter a valid phone number with country code",
+    "otpSent": "Verification Code Sent",
+    "otpSentDesc": "Enter the 6-digit code sent to {{phone}}",
+    "verifyToLogin": "Verify your phone number to sign in"
   }
 }

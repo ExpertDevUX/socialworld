@@ -32,6 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import DocumentsSection from "@/components/DocumentsSection";
 import FindFriendsDialog from "@/components/FindFriendsDialog";
+import FriendRequestsSection from "@/components/FriendRequestsSection";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -208,6 +209,9 @@ const ProfilePage = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Friend Requests Section */}
+          <FriendRequestsSection />
 
           {/* Find Friends Dialog */}
           <FindFriendsDialog 
