@@ -11,7 +11,10 @@ import {
   Plus,
   Trash2,
   Edit,
-  Power
+  Power,
+  BarChart3,
+  MessageSquare,
+  TrendingUp
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -53,7 +56,9 @@ import {
   useUpdateAdvertisement, 
   useDeleteAdvertisement 
 } from "@/hooks/useAdvertisements";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import Header from "@/components/Header";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const Admin = () => {
   const { t } = useTranslation();
@@ -70,6 +75,7 @@ const Admin = () => {
   const { data: userRoles = [] } = useAllUserRoles();
   const { data: posts = [] } = usePosts();
   const { data: advertisements = [] } = useAllAdvertisements();
+  const { data: analytics } = useAnalytics();
   
   const assignRole = useAssignRole();
   const removeRole = useRemoveRole();
@@ -77,6 +83,8 @@ const Admin = () => {
   const createAd = useCreateAdvertisement();
   const updateAd = useUpdateAdvertisement();
   const deleteAd = useDeleteAdvertisement();
+
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
 
   // Ad form state
   const [adForm, setAdForm] = useState({
@@ -215,8 +223,12 @@ const Admin = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="analytics" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              {t("admin.analytics")}
+            </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               {t("admin.users")}
@@ -230,6 +242,137 @@ const Admin = () => {
               {t("admin.ads")}
             </TabsTrigger>
           </TabsList>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{t("admin.totalUsers")}</CardTitle>
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{analytics?.totalUsers || 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{t("admin.totalPosts")}</CardTitle>
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{analytics?.totalPosts || 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{t("admin.totalMessages")}</CardTitle>
+                  <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{analytics?.totalMessages || 0}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">{t("admin.activeAds")}</CardTitle>
+                  <Megaphone className="w-4 h-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{analytics?.activeAds || 0}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    {t("admin.userGrowth")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={analytics?.userGrowth || []}>
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    {t("admin.postActivity")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={analytics?.postActivity || []}>
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} tickFormatter={(v) => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    {t("admin.roleDistribution")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={analytics?.roleDistribution || []}
+                        dataKey="count"
+                        nameKey="role"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({ role, count }) => `${role}: ${count}`}
+                      >
+                        {(analytics?.roleDistribution || []).map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("admin.quickStats")}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t("admin.totalConversations")}</span>
+                    <span className="font-bold">{analytics?.totalConversations || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t("admin.adminCount")}</span>
+                    <span className="font-bold">{analytics?.roleDistribution?.find(r => r.role === 'admin')?.count || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t("admin.moderatorCount")}</span>
+                    <span className="font-bold">{analytics?.roleDistribution?.find(r => r.role === 'moderator')?.count || 0}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users">

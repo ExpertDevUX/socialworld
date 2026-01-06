@@ -169,6 +169,7 @@
     "users": "Users",
     "content": "Content",
     "ads": "Ads",
+    "analytics": "Analytics",
     "userManagement": "User Management",
     "contentManagement": "Content Management",
     "adManagement": "Advertisement Management",
@@ -195,7 +196,18 @@
     "placementBanner": "Banner",
     "placementInline": "Inline",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "totalUsers": "Total Users",
+    "totalPosts": "Total Posts",
+    "totalMessages": "Total Messages",
+    "totalConversations": "Total Conversations",
+    "activeAds": "Active Ads",
+    "userGrowth": "User Growth (7 days)",
+    "postActivity": "Post Activity (7 days)",
+    "roleDistribution": "Role Distribution",
+    "quickStats": "Quick Stats",
+    "adminCount": "Admins",
+    "moderatorCount": "Moderators"
   },
   "notifications": {
     "profileUpdated": "Profile updated",
