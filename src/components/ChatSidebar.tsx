@@ -39,6 +39,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
   const [activeTab, setActiveTab] = useState<"all" | "favorites" | "groups">("all");
   const [newChatOpen, setNewChatOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<Profile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   
   const { data: profile } = useProfile();
@@ -79,7 +80,15 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => setProfileDialogOpen(true)} className="relative">
+            <button 
+              onClick={() => {
+                if (profile) {
+                  setSelectedUserProfile(profile as Profile);
+                  setProfileDialogOpen(true);
+                }
+              }} 
+              className="relative"
+            >
               <Avatar className="w-10 h-10 bg-primary cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {profile?.display_name?.[0]?.toUpperCase() || "U"}
@@ -251,7 +260,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
       <UserProfileDialog 
         open={profileDialogOpen} 
         onOpenChange={setProfileDialogOpen} 
-        profile={profile as Profile | null}
+        profile={selectedUserProfile}
         onStartChat={onSelectConversation}
       />
     </div>

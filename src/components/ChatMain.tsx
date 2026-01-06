@@ -1,11 +1,21 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, MessageSquare } from "lucide-react";
+import { Send, MessageSquare, Users, UserPlus, MoreVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useMessages, useSendMessage } from "@/hooks/useMessages";
-import { useAllProfiles } from "@/hooks/useProfile";
+import { useAllProfiles, Profile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConversations } from "@/hooks/useConversations";
+import { useConversationParticipants } from "@/hooks/useConversationParticipants";
+import AddGroupMembersDialog from "./AddGroupMembersDialog";
+import UserProfileDialog from "./UserProfileDialog";
 
 interface ChatMainProps {
   conversationId: string | null;
@@ -13,12 +23,20 @@ interface ChatMainProps {
 
 const ChatMain = ({ conversationId }: ChatMainProps) => {
   const [message, setMessage] = useState("");
+  const [addMembersOpen, setAddMembersOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { data: messages = [] } = useMessages(conversationId);
   const { data: profiles = [] } = useAllProfiles();
+  const { data: conversations = [] } = useConversations();
+  const { data: participants = [] } = useConversationParticipants(conversationId);
   const sendMessage = useSendMessage();
   const { user } = useAuth();
+
+  const currentConversation = conversations.find((c) => c.id === conversationId);
+  const participantUserIds = participants.map((p) => p.user_id);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,6 +44,27 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
 
   const getProfile = (userId: string) => {
     return profiles.find((p) => p.user_id === userId);
+  };
+
+  const handleAvatarClick = (userId: string) => {
+    const profile = getProfile(userId);
+    if (profile) {
+      setSelectedProfile(profile);
+      setProfileDialogOpen(true);
+    }
+  };
+
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case "online":
+        return "bg-green-500";
+      case "away":
+        return "bg-yellow-500";
+      case "busy":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -59,6 +98,49 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
 
   return (
     <div className="flex-1 flex flex-col bg-background">
+      {/* Header */}
+      {currentConversation && (
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="w-10 h-10">
+              <AvatarFallback className="bg-primary/20 text-primary">
+                {currentConversation.is_group ? (
+                  <Users className="w-5 h-5" />
+                ) : (
+                  currentConversation.name?.[0]?.toUpperCase() || "C"
+                )}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold text-foreground">
+                {currentConversation.name || "Chat"}
+              </h3>
+              {currentConversation.is_group && (
+                <p className="text-sm text-muted-foreground">
+                  {participants.length} member{participants.length !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          {currentConversation.is_group && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setAddMembersOpen(true)}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Members
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg) => {
@@ -70,11 +152,21 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
               key={msg.id}
               className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}
             >
-              <Avatar className="w-8 h-8">
-                <AvatarFallback className={isOwn ? "bg-primary text-primary-foreground" : "bg-secondary"}>
-                  {senderProfile?.display_name?.[0]?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
+              <button
+                onClick={() => handleAvatarClick(msg.sender_id)}
+                className="relative hover:ring-2 hover:ring-primary/50 rounded-full transition-all"
+              >
+                <Avatar className="w-8 h-8 cursor-pointer">
+                  <AvatarFallback className={isOwn ? "bg-primary text-primary-foreground" : "bg-secondary"}>
+                    {senderProfile?.display_name?.[0]?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${getStatusColor(
+                    senderProfile?.status
+                  )}`}
+                />
+              </button>
               <div
                 className={`max-w-md px-4 py-2 rounded-2xl ${
                   isOwn
@@ -82,6 +174,11 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
                     : "bg-secondary text-secondary-foreground rounded-bl-md"
                 }`}
               >
+                {currentConversation?.is_group && !isOwn && (
+                  <p className="text-xs font-medium mb-1 opacity-70">
+                    {senderProfile?.display_name || "Unknown"}
+                  </p>
+                )}
                 <p>{msg.content}</p>
                 <span className={`text-xs ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -107,6 +204,23 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
           </Button>
         </div>
       </form>
+
+      {/* Dialogs */}
+      {conversationId && (
+        <AddGroupMembersDialog
+          open={addMembersOpen}
+          onOpenChange={setAddMembersOpen}
+          conversationId={conversationId}
+          existingParticipantIds={participantUserIds}
+        />
+      )}
+      
+      <UserProfileDialog
+        open={profileDialogOpen}
+        onOpenChange={setProfileDialogOpen}
+        profile={selectedProfile}
+        onStartChat={() => {}}
+      />
     </div>
   );
 };
