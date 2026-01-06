@@ -11,7 +11,7 @@ const ChatPage = () => {
   useRealtimeProfiles();
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen w-full overflow-hidden">
       <Header />
       <ChatSidebar
         selectedConversation={selectedConversation}
