@@ -1,21 +1,79 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageSquare, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 type AuthMode = "email" | "phone";
+type AuthView = "signin" | "signup";
 
 const AuthCard = () => {
   const [authMode, setAuthMode] = useState<AuthMode>("email");
+  const [authView, setAuthView] = useState<AuthView>("signin");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const { signIn, signUp } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Sign in attempt:", { authMode, email, phone, password });
+    setLoading(true);
+
+    try {
+      if (authView === "signin") {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast({
+            title: "Error signing in",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          navigate("/chat");
+        }
+      } else {
+        if (!username.trim()) {
+          toast({
+            title: "Username required",
+            description: "Please enter a username",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        const { error } = await signUp(email, password, username);
+        if (error) {
+          toast({
+            title: "Error signing up",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Account created!",
+            description: "You can now sign in",
+          });
+          navigate("/chat");
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -33,7 +91,7 @@ const AuthCard = () => {
           ChatFlow
         </h1>
         <p className="text-muted-foreground text-center mb-6">
-          Sign in to continue chatting
+          {authView === "signin" ? "Sign in to continue chatting" : "Create your account"}
         </p>
 
         {/* Auth Mode Toggle */}
@@ -66,6 +124,22 @@ const AuthCard = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {authView === "signup" && (
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-foreground">
+                Username
+              </Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="johndoe"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="h-11"
+              />
+            </div>
+          )}
+
           {authMode === "email" ? (
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">
@@ -101,12 +175,14 @@ const AuthCard = () => {
               <Label htmlFor="password" className="text-foreground">
                 Password
               </Label>
-              <a
-                href="#"
-                className="text-sm text-primary hover:text-primary/80 transition-colors"
-              >
-                Forgot password?
-              </a>
+              {authView === "signin" && (
+                <a
+                  href="#"
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  Forgot password?
+                </a>
+              )}
             </div>
             <Input
               id="password"
@@ -118,8 +194,8 @@ const AuthCard = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full h-11 text-base font-medium">
-            Sign In
+          <Button type="submit" className="w-full h-11 text-base font-medium" disabled={loading}>
+            {loading ? "Loading..." : authView === "signin" ? "Sign In" : "Sign Up"}
           </Button>
         </form>
 
@@ -162,15 +238,31 @@ const AuthCard = () => {
           Continue with Google
         </Button>
 
-        {/* Sign Up Link */}
+        {/* Toggle Auth View */}
         <p className="text-center mt-6 text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <a
-            href="#"
-            className="text-primary hover:text-primary/80 font-medium transition-colors"
-          >
-            Sign up
-          </a>
+          {authView === "signin" ? (
+            <>
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => setAuthView("signup")}
+                className="text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                Sign up
+              </button>
+            </>
+          ) : (
+            <>
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => setAuthView("signin")}
+                className="text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                Sign in
+              </button>
+            </>
+          )}
         </p>
       </CardContent>
     </Card>
