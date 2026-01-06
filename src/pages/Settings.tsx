@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, 
-  Languages, 
   User,
   Key,
   Phone,
@@ -11,7 +10,8 @@ import {
   Eye,
   Palette,
   Sun,
-  Moon
+  Moon,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import { usePhoneVerification } from "@/hooks/usePhoneVerification";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import LanguageSelector from "@/components/LanguageSelector";
 
 type SettingsSection = "profile" | "password" | "phone" | "2fa" | "sessions" | "privacy" | "appearance";
 
@@ -31,12 +33,15 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
+  const phoneVerification = usePhoneVerification();
   const { theme, setTheme, resolvedTheme } = useTheme();
   
   const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [status, setStatus] = useState("online");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
 
   // Update local state when profile loads
   useEffect(() => {
@@ -109,9 +114,7 @@ const SettingsPage = () => {
           <h1 className="text-xl font-bold text-sidebar-foreground">Settings</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-sidebar-muted">
-            <Languages className="w-5 h-5" />
-          </Button>
+          <LanguageSelector />
           <ThemeToggle />
         </div>
       </header>
@@ -324,23 +327,120 @@ const SettingsPage = () => {
                   </div>
                   <div>
                     <CardTitle className="text-sidebar-foreground">Phone Number</CardTitle>
-                    <p className="text-sm text-sidebar-muted">Add or update your phone number</p>
+                    <p className="text-sm text-sidebar-muted">
+                      {profile?.phone_number 
+                        ? `Current: ${profile.phone_number}` 
+                        : "Add or update your phone number"}
+                    </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sidebar-foreground">Phone Number</Label>
-                  <Input
-                    type="tel"
-                    placeholder="+1 (555) 000-0000"
-                    className="bg-sidebar border-sidebar-border text-sidebar-foreground"
-                  />
-                </div>
+                {profile?.phone_number && !phoneVerification.verificationSent && (
+                  <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    <span className="text-sm text-green-500">Phone number verified</span>
+                  </div>
+                )}
 
-                <Button className="w-full">
-                  Save Phone Number
-                </Button>
+                {phoneVerification.error && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive">{phoneVerification.error}</p>
+                  </div>
+                )}
+
+                {!phoneVerification.verificationSent ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-sidebar-foreground">Phone Number</Label>
+                      <Input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="+1 555 000 0000"
+                        className="bg-sidebar border-sidebar-border text-sidebar-foreground"
+                      />
+                      <p className="text-xs text-sidebar-muted">
+                        Include country code (e.g., +1 for US)
+                      </p>
+                    </div>
+
+                    <Button 
+                      className="w-full"
+                      onClick={async () => {
+                        const result = await phoneVerification.sendVerificationCode(phoneNumber);
+                        if (result.success) {
+                          toast({
+                            title: "Verification code sent",
+                            description: "Check your phone for the verification code",
+                          });
+                        } else {
+                          toast({
+                            title: "Error",
+                            description: result.error || "Failed to send verification code",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      disabled={!phoneNumber || phoneVerification.isLoading}
+                    >
+                      {phoneVerification.isLoading ? "Sending..." : "Send Verification Code"}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-sidebar-foreground">Verification Code</Label>
+                      <Input
+                        type="text"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        placeholder="Enter 6-digit code"
+                        maxLength={6}
+                        className="bg-sidebar border-sidebar-border text-sidebar-foreground text-center text-lg tracking-widest"
+                      />
+                      <p className="text-xs text-sidebar-muted">
+                        Enter the code sent to {phoneNumber}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          phoneVerification.resetState();
+                          setVerificationCode("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        className="flex-1"
+                        onClick={async () => {
+                          const result = await phoneVerification.verifyCode(phoneNumber, verificationCode);
+                          if (result.success) {
+                            toast({
+                              title: "Phone verified",
+                              description: "Your phone number has been verified successfully",
+                            });
+                            setVerificationCode("");
+                            setPhoneNumber("");
+                          } else {
+                            toast({
+                              title: "Verification failed",
+                              description: result.error || "Invalid verification code",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        disabled={verificationCode.length < 6 || phoneVerification.isLoading}
+                      >
+                        {phoneVerification.isLoading ? "Verifying..." : "Verify"}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}

@@ -8,7 +8,6 @@ import {
   Star, 
   Users, 
   LogOut, 
-  Languages,
   Plus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +27,7 @@ import NewChatDialog from "./NewChatDialog";
 import CreateGroupDialog from "./CreateGroupDialog";
 import UserProfileDialog from "./UserProfileDialog";
 import ThemeToggle from "./ThemeToggle";
+import LanguageSelector from "./LanguageSelector";
 
 interface ChatSidebarProps {
   selectedConversation: string | null;
@@ -248,9 +248,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           <LogOut className="w-5 h-5" />
         </Button>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
-            <Languages className="w-5 h-5" />
-          </Button>
+          <LanguageSelector />
           <ThemeToggle />
         </div>
       </div>
