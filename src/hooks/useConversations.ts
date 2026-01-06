@@ -57,17 +57,13 @@ export function useCreateConversation() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ participantUserId, isGroup = false, name }: { 
-      participantUserId: string; 
-      isGroup?: boolean; 
-      name?: string;
-    }) => {
+    mutationFn: async ({ participantUserId }: { participantUserId: string }) => {
       if (!user) throw new Error('Not authenticated');
 
       // Create conversation
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
-        .insert({ is_group: isGroup, name })
+        .insert({ is_group: false })
         .select()
         .single();
 
@@ -88,6 +84,75 @@ export function useCreateConversation() {
       if (p2Error) throw p2Error;
 
       return conversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+export function useCreateGroupConversation() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ name, participantUserIds }: { 
+      name: string; 
+      participantUserIds: string[];
+    }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      // Create group conversation
+      const { data: conversation, error: convError } = await supabase
+        .from('conversations')
+        .insert({ is_group: true, name })
+        .select()
+        .single();
+
+      if (convError) throw convError;
+
+      // Add current user as participant
+      const { error: ownerError } = await supabase
+        .from('conversation_participants')
+        .insert({ conversation_id: conversation.id, user_id: user.id });
+
+      if (ownerError) throw ownerError;
+
+      // Add other participants if any
+      if (participantUserIds.length > 0) {
+        const participants = participantUserIds.map((userId) => ({
+          conversation_id: conversation.id,
+          user_id: userId,
+        }));
+
+        const { error: participantsError } = await supabase
+          .from('conversation_participants')
+          .insert(participants);
+
+        if (participantsError) throw participantsError;
+      }
+
+      return conversation;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+export function useAddParticipant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ conversationId, userId }: { conversationId: string; userId: string }) => {
+      const { data, error } = await supabase
+        .from('conversation_participants')
+        .insert({ conversation_id: conversationId, user_id: userId })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
