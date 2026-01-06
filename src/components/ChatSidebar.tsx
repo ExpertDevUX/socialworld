@@ -31,6 +31,7 @@ import CreateGroupDialog from "./CreateGroupDialog";
 import UserProfileDialog from "./UserProfileDialog";
 import ThemeToggle from "./ThemeToggle";
 import LanguageSelector from "./LanguageSelector";
+import AdBanner from "./AdBanner";
 
 interface ChatSidebarProps {
   selectedConversation: string | null;
@@ -252,6 +253,9 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           ))
         )}
       </div>
+
+      {/* Ad Banner */}
+      <AdBanner placement="sidebar" />
 
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border flex items-center justify-between">
