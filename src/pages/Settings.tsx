@@ -1,24 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, 
   Languages, 
-  Moon,
   User,
   Key,
   Phone,
   Shield,
   Monitor,
   Eye,
-  Palette
+  Palette,
+  Sun,
+  Moon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/contexts/ThemeContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type SettingsSection = "profile" | "password" | "phone" | "2fa" | "sessions" | "privacy" | "appearance";
 
@@ -27,24 +31,28 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   
   const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
-  const [displayName, setDisplayName] = useState(profile?.display_name || "");
-  const [username, setUsername] = useState(profile?.username || "");
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [status, setStatus] = useState("online");
 
   // Update local state when profile loads
-  useState(() => {
+  useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name);
       setUsername(profile.username);
+      setStatus(profile.status || "online");
     }
-  });
+  }, [profile]);
 
   const handleSaveProfile = async () => {
     try {
       await updateProfile.mutateAsync({
         display_name: displayName,
         username: username,
+        status: status,
       });
       toast({
         title: "Profile updated",
@@ -59,10 +67,23 @@ const SettingsPage = () => {
     }
   };
 
+  const getStatusColor = (statusValue: string) => {
+    switch (statusValue) {
+      case "online":
+        return "bg-green-500";
+      case "away":
+        return "bg-yellow-500";
+      case "busy":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
   const settingsMenu = [
     { id: "profile" as const, icon: User, label: "Profile Information", desc: "Update your personal inform..." },
     { id: "password" as const, icon: Key, label: "Password", desc: "Change your password" },
-    { id: "phone" as const, icon: Phone, label: "Phone Number", desc: "Not set" },
+    { id: "phone" as const, icon: Phone, label: "Phone Number", desc: profile?.phone_number || "Not set" },
     { id: "2fa" as const, icon: Shield, label: "Two-Factor Auth", desc: "Add extra security with 2FA" },
     { id: "sessions" as const, icon: Monitor, label: "Active Sessions", desc: "Manage your login sessions" },
     { id: "privacy" as const, icon: Eye, label: "Privacy", desc: "Control who can see your pro..." },
@@ -91,9 +112,7 @@ const SettingsPage = () => {
           <Button variant="ghost" size="icon" className="text-sidebar-muted">
             <Languages className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-sidebar-muted">
-            <Moon className="w-5 h-5" />
-          </Button>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -107,19 +126,17 @@ const SettingsPage = () => {
                 <div className="relative">
                   <Avatar className="w-14 h-14">
                     <AvatarFallback className="bg-primary/20 text-primary text-xl">
-                      <User className="w-6 h-6" />
+                      {profile?.display_name?.[0]?.toUpperCase() || <User className="w-6 h-6" />}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-sidebar-accent flex items-center justify-center">
-                    <User className="w-2 h-2 text-primary-foreground" />
-                  </span>
+                  <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-sidebar-accent ${getStatusColor(status)}`}></span>
                 </div>
                 <div>
                   <h2 className="font-bold text-sidebar-foreground">{profile?.display_name}</h2>
                   <p className="text-sidebar-muted text-sm">@{profile?.username}</p>
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full mt-1">
-                    <span className="w-2 h-2 bg-primary rounded-full"></span>
-                    Online
+                  <span className="inline-flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full mt-1 capitalize">
+                    <span className={`w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
+                    {status}
                   </span>
                 </div>
               </div>
@@ -205,6 +222,41 @@ const SettingsPage = () => {
                     onChange={(e) => setUsername(e.target.value)}
                     className="bg-sidebar border-sidebar-border text-sidebar-foreground"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sidebar-foreground">Status</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger className="bg-sidebar border-sidebar-border text-sidebar-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-sidebar border-sidebar-border">
+                      <SelectItem value="online">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          Online
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="away">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                          Away
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="busy">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          Busy
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="offline">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
+                          Offline
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Button 
@@ -386,11 +438,51 @@ const SettingsPage = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sidebar-muted">
-                  Theme and appearance settings coming soon. You'll be able to customize colors, 
-                  fonts, and more.
-                </p>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-sidebar-foreground">Theme</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={() => setTheme("light")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${
+                        theme === "light" 
+                          ? "border-primary bg-primary/10" 
+                          : "border-sidebar-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                        <Sun className="w-6 h-6 text-yellow-500" />
+                      </div>
+                      <span className="text-sm font-medium text-sidebar-foreground">Light</span>
+                    </button>
+                    <button
+                      onClick={() => setTheme("dark")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${
+                        theme === "dark" 
+                          ? "border-primary bg-primary/10" 
+                          : "border-sidebar-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-700 flex items-center justify-center">
+                        <Moon className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <span className="text-sm font-medium text-sidebar-foreground">Dark</span>
+                    </button>
+                    <button
+                      onClick={() => setTheme("system")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors ${
+                        theme === "system" 
+                          ? "border-primary bg-primary/10" 
+                          : "border-sidebar-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-white to-gray-900 border flex items-center justify-center">
+                        <Monitor className="w-6 h-6 text-primary" />
+                      </div>
+                      <span className="text-sm font-medium text-sidebar-foreground">System</span>
+                    </button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}

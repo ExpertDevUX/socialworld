@@ -9,16 +9,25 @@ import {
   Users, 
   LogOut, 
   Languages,
-  Moon
+  Plus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useProfile } from "@/hooks/useProfile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useProfile, Profile } from "@/hooks/useProfile";
 import { useConversations } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import NewChatDialog from "./NewChatDialog";
+import CreateGroupDialog from "./CreateGroupDialog";
+import UserProfileDialog from "./UserProfileDialog";
+import ThemeToggle from "./ThemeToggle";
 
 interface ChatSidebarProps {
   selectedConversation: string | null;
@@ -29,6 +38,8 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "favorites" | "groups">("all");
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   
   const { data: profile } = useProfile();
   const { data: conversations = [] } = useConversations();
@@ -36,14 +47,30 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
   const navigate = useNavigate();
 
   const filteredConversations = conversations.filter(conv => {
-    if (activeTab === "favorites") return conv.is_favorite;
-    if (activeTab === "groups") return conv.is_group;
-    return true;
+    const matchesSearch = !searchQuery || 
+      conv.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (activeTab === "favorites") return conv.is_favorite && matchesSearch;
+    if (activeTab === "groups") return conv.is_group && matchesSearch;
+    return matchesSearch;
   });
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case "online":
+        return "bg-green-500";
+      case "away":
+        return "bg-yellow-500";
+      case "busy":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
   };
 
   return (
@@ -52,28 +79,40 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10 bg-primary">
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {profile?.display_name?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
+            <button onClick={() => setProfileDialogOpen(true)} className="relative">
+              <Avatar className="w-10 h-10 bg-primary cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {profile?.display_name?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-sidebar ${getStatusColor(profile?.status)}`}></span>
+            </button>
             <div>
               <h2 className="font-semibold text-sidebar-foreground">Chats</h2>
-              <span className="text-xs text-primary flex items-center gap-1">
-                <span className="w-2 h-2 bg-primary rounded-full"></span>
-                Online
+              <span className="text-xs text-primary flex items-center gap-1 capitalize">
+                <span className={`w-2 h-2 rounded-full ${getStatusColor(profile?.status)}`}></span>
+                {profile?.status || "online"}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-sidebar-muted hover:text-sidebar-foreground"
-              onClick={() => setNewChatOpen(true)}
-            >
-              <Edit className="w-5 h-5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border">
+                <DropdownMenuItem onClick={() => setNewChatOpen(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  New Chat
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCreateGroupOpen(true)}>
+                  <Users className="w-4 h-4 mr-2" />
+                  Create Group
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
               <Bell className="w-5 h-5" />
             </Button>
@@ -144,6 +183,14 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           <div className="flex flex-col items-center justify-center h-40 text-sidebar-muted">
             <Users className="w-12 h-12 mb-2 opacity-50" />
             <p>No conversations found</p>
+            <Button 
+              variant="link" 
+              size="sm" 
+              onClick={() => activeTab === "groups" ? setCreateGroupOpen(true) : setNewChatOpen(true)}
+              className="mt-2"
+            >
+              {activeTab === "groups" ? "Create a group" : "Start a chat"}
+            </Button>
           </div>
         ) : (
           filteredConversations.map((conv) => (
@@ -159,13 +206,18 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10">
                   <AvatarFallback className="bg-primary/20 text-primary">
-                    {conv.name?.[0]?.toUpperCase() || "C"}
+                    {conv.is_group ? <Users className="w-5 h-5" /> : (conv.name?.[0]?.toUpperCase() || "C")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-sidebar-foreground truncate">
-                    {conv.name || "Chat"}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-sidebar-foreground truncate">
+                      {conv.name || "Chat"}
+                    </h3>
+                    {conv.is_group && (
+                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">Group</span>
+                    )}
+                  </div>
                   <p className="text-sm text-sidebar-muted truncate">
                     Click to view messages
                   </p>
@@ -190,13 +242,18 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
             <Languages className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
-            <Moon className="w-5 h-5" />
-          </Button>
+          <ThemeToggle />
         </div>
       </div>
 
       <NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} onConversationCreated={onSelectConversation} />
+      <CreateGroupDialog open={createGroupOpen} onOpenChange={setCreateGroupOpen} onGroupCreated={onSelectConversation} />
+      <UserProfileDialog 
+        open={profileDialogOpen} 
+        onOpenChange={setProfileDialogOpen} 
+        profile={profile as Profile | null}
+        onStartChat={onSelectConversation}
+      />
     </div>
   );
 };

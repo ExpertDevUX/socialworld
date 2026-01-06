@@ -4,7 +4,6 @@ import {
   ArrowLeft, 
   Bell, 
   Languages, 
-  Moon, 
   Settings,
   FileText,
   Star,
@@ -30,6 +29,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { usePosts, useCreatePost, usePostReactions, useToggleReaction, useToggleSavePost } from "@/hooks/usePosts";
 import { useFriendships, useFriendRequests } from "@/hooks/useFriendships";
 import { useAuth } from "@/contexts/AuthContext";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -56,6 +56,19 @@ const ProfilePage = () => {
     }
   };
 
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case "online":
+        return "bg-green-500";
+      case "away":
+        return "bg-yellow-500";
+      case "busy":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-sidebar">
       {/* Header */}
@@ -78,9 +91,7 @@ const ProfilePage = () => {
           <Button variant="ghost" size="icon" className="text-sidebar-muted">
             <Languages className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="text-sidebar-muted">
-            <Moon className="w-5 h-5" />
-          </Button>
+          <ThemeToggle />
           <Button 
             variant="ghost" 
             size="icon" 
@@ -104,14 +115,14 @@ const ProfilePage = () => {
                       {profile?.display_name?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-sidebar-accent"></span>
+                  <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-sidebar-accent ${getStatusColor(profile?.status)}`}></span>
                 </div>
                 <div>
                   <h2 className="font-bold text-sidebar-foreground text-lg">{profile?.display_name}</h2>
                   <p className="text-sidebar-muted">@{profile?.username}</p>
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full mt-1">
-                    <span className="w-2 h-2 bg-primary rounded-full"></span>
-                    Online
+                  <span className="inline-flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full mt-1 capitalize">
+                    <span className={`w-2 h-2 rounded-full ${getStatusColor(profile?.status)}`}></span>
+                    {profile?.status || "online"}
                   </span>
                 </div>
               </div>
