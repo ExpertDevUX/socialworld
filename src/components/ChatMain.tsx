@@ -86,12 +86,12 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
 
   if (!conversationId) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-background">
-        <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mb-6">
-          <MessageSquare className="w-10 h-10 text-primary-foreground" />
+      <div className="flex-1 flex flex-col items-center justify-center bg-background p-4 ml-0 md:ml-0">
+        <div className="w-16 h-16 md:w-20 md:h-20 bg-primary rounded-full flex items-center justify-center mb-4 md:mb-6">
+          <MessageSquare className="w-8 h-8 md:w-10 md:h-10 text-primary-foreground" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">{t('chat.welcome')}</h2>
-        <p className="text-muted-foreground text-center max-w-md">
+        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2 text-center">{t('chat.welcome')}</h2>
+        <p className="text-muted-foreground text-center max-w-md text-sm md:text-base px-4">
           {t('chat.welcomeSubtitle')}
         </p>
       </div>

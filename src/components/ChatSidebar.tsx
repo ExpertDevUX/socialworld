@@ -8,7 +8,9 @@ import {
   Users, 
   LogOut, 
   Plus,
-  Shield
+  Shield,
+  Menu,
+  X
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -28,13 +30,11 @@ import { useIsAdmin } from "@/hooks/useRoles";
 import NewChatDialog from "./NewChatDialog";
 import CreateGroupDialog from "./CreateGroupDialog";
 import UserProfileDialog from "./UserProfileDialog";
-import ThemeToggle from "./ThemeToggle";
-import LanguageSelector from "./LanguageSelector";
 import AdBanner from "./AdBanner";
-import NotificationDropdown from "./NotificationDropdown";
 import StatusSelector from "./StatusSelector";
 import StatusIndicator from "./StatusIndicator";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatSidebarProps {
   selectedConversation: string | null;
@@ -49,12 +49,14 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState<Profile | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const { data: profile } = useProfile();
   const { data: conversations = [] } = useConversations();
   const { signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = !searchQuery || 
@@ -77,70 +79,86 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
     }
   };
 
-  return (
-    <TooltipProvider>
-      <div className="w-80 h-screen bg-sidebar flex flex-col border-r border-sidebar-border">
-        {/* Header */}
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <StatusSelector onProfileClick={handleViewProfile} />
-              <div>
-                <h2 className="font-semibold text-sidebar-foreground">{t('chat.title')}</h2>
-                <span className="text-xs text-primary flex items-center gap-1 capitalize">
-                  <StatusIndicator status={profile?.status} size="sm" showTooltip={false} />
-                  {t(`profile.${profile?.status || 'online'}`)}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
-                    <Plus className="w-5 h-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border">
-                  <DropdownMenuItem onClick={() => setNewChatOpen(true)}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    {t('chat.newChat')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setCreateGroupOpen(true)}>
-                    <Users className="w-4 h-4 mr-2" />
-                    {t('chat.createGroup')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-sidebar-muted hover:text-sidebar-foreground"
-                onClick={() => navigate("/profile")}
-              >
-                <User className="w-5 h-5" />
-              </Button>
-              {isAdmin && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-sidebar-muted hover:text-sidebar-foreground"
-                  onClick={() => navigate("/admin")}
-                  title="Admin Panel"
-                >
-                  <Shield className="w-5 h-5" />
-                </Button>
-              )}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-sidebar-muted hover:text-sidebar-foreground"
-                onClick={() => navigate("/settings")}
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
+  const handleSelectConversation = (id: string) => {
+    onSelectConversation(id);
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
+  const sidebarContent = (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <StatusSelector onProfileClick={handleViewProfile} />
+            <div>
+              <h2 className="font-semibold text-sidebar-foreground">{t('chat.title')}</h2>
+              <span className="text-xs text-primary flex items-center gap-1 capitalize">
+                <StatusIndicator status={profile?.status} size="sm" showTooltip={false} />
+                {t(`profile.${profile?.status || 'online'}`)}
+              </span>
             </div>
           </div>
+          <div className="flex items-center gap-1">
+            {isMobile && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-sidebar-muted hover:text-sidebar-foreground"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border">
+                <DropdownMenuItem onClick={() => setNewChatOpen(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  {t('chat.newChat')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCreateGroupOpen(true)}>
+                  <Users className="w-4 h-4 mr-2" />
+                  {t('chat.createGroup')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-sidebar-muted hover:text-sidebar-foreground"
+              onClick={() => navigate("/profile")}
+            >
+              <User className="w-5 h-5" />
+            </Button>
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-sidebar-muted hover:text-sidebar-foreground"
+                onClick={() => navigate("/admin")}
+                title="Admin Panel"
+              >
+                <Shield className="w-5 h-5" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-sidebar-muted hover:text-sidebar-foreground"
+              onClick={() => navigate("/settings")}
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
 
         {/* Search */}
         <div className="relative">
@@ -155,7 +173,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
       </div>
 
       {/* Tabs */}
-      <div className="px-4 flex gap-2">
+      <div className="px-4 flex gap-2 flex-wrap">
         <Button
           variant={activeTab === "all" ? "default" : "ghost"}
           size="sm"
@@ -203,7 +221,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           filteredConversations.map((conv) => (
             <div
               key={conv.id}
-              onClick={() => onSelectConversation(conv.id)}
+              onClick={() => handleSelectConversation(conv.id)}
               className={`p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
                 selectedConversation === conv.id
                   ? "bg-sidebar-accent"
@@ -239,29 +257,60 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
       <AdBanner placement="sidebar" />
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border flex items-center justify-between">
+      <div className="p-4 border-t border-sidebar-border">
         <Button 
           variant="ghost" 
-          size="icon" 
-          className="text-sidebar-muted hover:text-sidebar-foreground"
+          size="sm" 
+          className="text-sidebar-muted hover:text-sidebar-foreground w-full justify-start"
           onClick={handleSignOut}
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-5 h-5 mr-2" />
+          {t('common.signOut')}
         </Button>
-        <div className="flex gap-1">
-          <LanguageSelector />
-          <ThemeToggle />
-        </div>
       </div>
 
-        <NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} onConversationCreated={onSelectConversation} />
-        <CreateGroupDialog open={createGroupOpen} onOpenChange={setCreateGroupOpen} onGroupCreated={onSelectConversation} />
-        <UserProfileDialog 
-          open={profileDialogOpen} 
-          onOpenChange={setProfileDialogOpen} 
-          profile={selectedUserProfile}
-          onStartChat={onSelectConversation}
+      <NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} onConversationCreated={handleSelectConversation} />
+      <CreateGroupDialog open={createGroupOpen} onOpenChange={setCreateGroupOpen} onGroupCreated={handleSelectConversation} />
+      <UserProfileDialog 
+        open={profileDialogOpen} 
+        onOpenChange={setProfileDialogOpen} 
+        profile={selectedUserProfile}
+        onStartChat={handleSelectConversation}
+      />
+    </div>
+  );
+
+  return (
+    <TooltipProvider>
+      {/* Mobile menu button */}
+      {isMobile && !sidebarOpen && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="fixed top-4 left-4 z-50 bg-sidebar text-sidebar-foreground shadow-lg"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
+      )}
+
+      {/* Mobile overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
         />
+      )}
+
+      {/* Sidebar */}
+      <div className={`
+        ${isMobile 
+          ? `fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+          : 'w-80 lg:w-96 shrink-0'
+        }
+        h-screen bg-sidebar border-r border-sidebar-border
+      `}>
+        {sidebarContent}
       </div>
     </TooltipProvider>
   );
