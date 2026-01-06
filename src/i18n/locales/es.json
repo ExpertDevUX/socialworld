@@ -20,7 +20,37 @@
     "noAccount": "¿No tienes una cuenta?",
     "hasAccount": "¿Ya tienes una cuenta?",
     "signInWith": "Iniciar sesión con {{provider}}",
-    "orContinueWith": "O continuar con"
+    "orContinueWith": "O continuar con",
+    "signInToContinue": "Inicia sesión para continuar chateando",
+    "createYourAccount": "Crea tu cuenta",
+    "useEmail": "Usar correo",
+    "usePhone": "Usar teléfono",
+    "username": "Nombre de usuario",
+    "phoneNumber": "Número de teléfono",
+    "signIn": "Iniciar sesión",
+    "continueWithGoogle": "Continuar con Google",
+    "hero": {
+      "title": "Conecta con cualquiera, en cualquier lugar",
+      "subtitle": "Experimenta una comunicación fluida con nuestra plataforma de chat moderna. Rápida, segura y diseñada para ti."
+    },
+    "features": {
+      "realtime": {
+        "title": "Mensajería en tiempo real",
+        "description": "Entrega instantánea de mensajes"
+      },
+      "secure": {
+        "title": "Cifrado de extremo a extremo",
+        "description": "Tu privacidad importa"
+      },
+      "fast": {
+        "title": "Súper rápido",
+        "description": "Rendimiento optimizado"
+      },
+      "global": {
+        "title": "Acceso global",
+        "description": "Conecta mundialmente"
+      }
+    }
   },
   "chat": {
     "title": "Chats",
