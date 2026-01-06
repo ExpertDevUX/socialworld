@@ -96,7 +96,9 @@
     "videoCall": "Video Call",
     "connecting": "Connecting...",
     "waitingForParticipants": "Waiting for other participants...",
-    "callEnded": "Call ended"
+    "callEnded": "Call ended",
+    "incomingVoiceCall": "Incoming voice call...",
+    "incomingVideoCall": "Incoming video call..."
   },
   "profile": {
     "title": "Profile",

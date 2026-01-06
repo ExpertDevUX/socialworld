@@ -12,12 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMessages, useSendMessage } from "@/hooks/useMessages";
 import { useAllProfiles, Profile } from "@/hooks/useProfile";
+import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useConversations";
 import { useConversationParticipants } from "@/hooks/useConversationParticipants";
+import { useCallSignaling } from "@/hooks/useCallSignaling";
 import AddGroupMembersDialog from "./AddGroupMembersDialog";
 import UserProfileDialog from "./UserProfileDialog";
 import VideoCallDialog from "./VideoCallDialog";
+import IncomingCallDialog from "./IncomingCallDialog";
 
 interface ChatMainProps {
   conversationId: string | null;
@@ -37,8 +40,12 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
   const { data: profiles = [] } = useAllProfiles();
   const { data: conversations = [] } = useConversations();
   const { data: participants = [] } = useConversationParticipants(conversationId);
+  const { data: currentUserProfile } = useProfile();
   const sendMessage = useSendMessage();
   const { user } = useAuth();
+
+  // Call signaling
+  const { incomingCall, startCall, acceptCall, declineCall } = useCallSignaling(conversationId);
 
   const currentConversation = conversations.find((c) => c.id === conversationId);
   const participantUserIds = participants.map((p) => p.user_id);
@@ -87,9 +94,26 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
     }
   };
 
-  const handleStartCall = (video: boolean) => {
+  const handleStartCall = async (video: boolean) => {
     setIsVideoCall(video);
     setCallDialogOpen(true);
+    
+    // Notify other participants
+    const callerName = currentUserProfile?.display_name || 'Someone';
+    await startCall(callerName, video);
+  };
+
+  const handleAcceptCall = () => {
+    const call = acceptCall();
+    if (call) {
+      setIsVideoCall(call.isVideoCall);
+      setCallDialogOpen(true);
+    }
+  };
+
+  const handleDeclineCall = async () => {
+    const callerName = currentUserProfile?.display_name || 'Someone';
+    await declineCall(callerName);
   };
 
   if (!conversationId) {
@@ -263,6 +287,13 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
           isVideoCall={isVideoCall}
         />
       )}
+
+      {/* Incoming Call Dialog */}
+      <IncomingCallDialog
+        incomingCall={incomingCall}
+        onAccept={handleAcceptCall}
+        onDecline={handleDeclineCall}
+      />
     </div>
   );
 };
