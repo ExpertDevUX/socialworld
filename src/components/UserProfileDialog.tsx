@@ -1,4 +1,5 @@
-import { MessageCircle, UserPlus, X } from "lucide-react";
+import { MessageCircle, UserPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,7 @@ interface UserProfileDialogProps {
 }
 
 const UserProfileDialog = ({ open, onOpenChange, profile, onStartChat }: UserProfileDialogProps) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: friendships = [] } = useFriendships();
   const sendFriendRequest = useSendFriendRequest();
@@ -93,7 +95,7 @@ const UserProfileDialog = ({ open, onOpenChange, profile, onStartChat }: UserPro
 
           <span className="inline-flex items-center gap-1 text-xs bg-primary/20 text-primary px-3 py-1 rounded-full mb-4 capitalize">
             <span className={`w-2 h-2 rounded-full ${getStatusColor(profile.status)}`}></span>
-            {profile.status || "offline"}
+            {t(`profile.${profile.status || 'offline'}`)}
           </span>
 
           {!isOwnProfile && (
@@ -104,7 +106,7 @@ const UserProfileDialog = ({ open, onOpenChange, profile, onStartChat }: UserPro
                 disabled={createConversation.isPending}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Message
+                {t('profile.message')}
               </Button>
               
               {!existingFriendship ? (
@@ -115,11 +117,11 @@ const UserProfileDialog = ({ open, onOpenChange, profile, onStartChat }: UserPro
                   className="flex-1"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Add Friend
+                  {t('profile.addFriend')}
                 </Button>
               ) : (
                 <Button variant="outline" disabled className="flex-1">
-                  {existingFriendship.status === "accepted" ? "Friends" : "Pending"}
+                  {existingFriendship.status === "accepted" ? t('profile.friends') : t('profile.pending')}
                 </Button>
               )}
             </div>

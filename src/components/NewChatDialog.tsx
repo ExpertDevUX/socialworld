@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ interface NewChatDialogProps {
 }
 
 const NewChatDialog = ({ open, onOpenChange, onConversationCreated }: NewChatDialogProps) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const { data: profiles = [] } = useAllProfiles();
   const { user } = useAuth();
@@ -47,13 +49,13 @@ const NewChatDialog = ({ open, onOpenChange, onConversationCreated }: NewChatDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-sidebar border-sidebar-border text-sidebar-foreground">
         <DialogHeader>
-          <DialogTitle>Start a new chat</DialogTitle>
+          <DialogTitle>{t('chat.newChat')}</DialogTitle>
         </DialogHeader>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sidebar-muted" />
           <Input
-            placeholder="Search users..."
+            placeholder={t('users.searchUsers')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 bg-sidebar-accent border-primary/30 focus:border-primary text-sidebar-foreground placeholder:text-sidebar-muted"
@@ -84,7 +86,7 @@ const NewChatDialog = ({ open, onOpenChange, onConversationCreated }: NewChatDia
             </div>
           ))}
           {filteredProfiles.length === 0 && (
-            <p className="text-center text-sidebar-muted py-4">No users found</p>
+            <p className="text-center text-sidebar-muted py-4">{t('users.noUsersFound')}</p>
           )}
         </div>
       </DialogContent>

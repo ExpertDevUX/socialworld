@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Users, Check, UserPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ const AddGroupMembersDialog = ({
   conversationId,
   existingParticipantIds,
 }: AddGroupMembersDialogProps) => {
+  const { t } = useTranslation();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -60,13 +62,13 @@ const AddGroupMembersDialog = ({
           userId,
         });
       }
-      toast.success(`Added ${selectedUsers.length} member(s) to the group`);
+      toast.success(t('notifications.memberAdded', { count: selectedUsers.length }));
       onOpenChange(false);
       setSelectedUsers([]);
       setSearchQuery("");
     } catch (error) {
       console.error("Failed to add members:", error);
-      toast.error("Failed to add members");
+      toast.error(t('notifications.failedToAddMembers'));
     }
   };
 
@@ -76,13 +78,13 @@ const AddGroupMembersDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5" />
-            Add Members
+            {t('chat.addMembers')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <Input
-            placeholder="Search users to add..."
+            placeholder={t('users.searchUsersToAdd')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-sidebar-accent border-primary/30 focus:border-primary text-sidebar-foreground placeholder:text-sidebar-muted"
@@ -113,7 +115,7 @@ const AddGroupMembersDialog = ({
           <div className="max-h-40 overflow-y-auto space-y-1">
             {filteredProfiles.length === 0 ? (
               <p className="text-center text-sidebar-muted py-4">
-                No users available to add
+                {t('users.noUsersAvailable')}
               </p>
             ) : (
               filteredProfiles.map((profile) => {
