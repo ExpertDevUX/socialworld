@@ -10,7 +10,8 @@ import {
   Plus,
   Shield,
   Menu,
-  X
+  X,
+  Bell
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -34,6 +35,9 @@ import UserProfileDialog from "./UserProfileDialog";
 import AdBanner from "./AdBanner";
 import StatusSelector from "./StatusSelector";
 import StatusIndicator from "./StatusIndicator";
+import LanguageSelector from "./LanguageSelector";
+import ThemeToggle from "./ThemeToggle";
+import NotificationDropdown from "./NotificationDropdown";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -289,15 +293,22 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
 
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-sidebar-muted hover:text-sidebar-foreground w-full justify-start"
-          onClick={handleSignOut}
-        >
-          <LogOut className="w-5 h-5 mr-2" />
-          {t('common.signOut')}
-        </Button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <LanguageSelector />
+            <NotificationDropdown />
+            <ThemeToggle />
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-sidebar-muted hover:text-sidebar-foreground"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-5 h-5 mr-2" />
+            {t('common.signOut')}
+          </Button>
+        </div>
       </div>
 
       <NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} onConversationCreated={handleSelectConversation} />
