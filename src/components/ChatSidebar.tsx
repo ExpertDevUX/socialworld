@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useProfile, Profile } from "@/hooks/useProfile";
 import { useConversations } from "@/hooks/useConversations";
+import { useToggleFavorite } from "@/hooks/useFavoriteConversation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useRoles";
 import NewChatDialog from "./NewChatDialog";
@@ -33,7 +34,7 @@ import UserProfileDialog from "./UserProfileDialog";
 import AdBanner from "./AdBanner";
 import StatusSelector from "./StatusSelector";
 import StatusIndicator from "./StatusIndicator";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatSidebarProps {
@@ -53,6 +54,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
   
   const { data: profile } = useProfile();
   const { data: conversations = [] } = useConversations();
+  const toggleFavorite = useToggleFavorite();
   const { signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
@@ -229,20 +231,21 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           filteredConversations.map((conv) => (
             <div
               key={conv.id}
-              onClick={() => handleSelectConversation(conv.id)}
-              className={`p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
+              className={`p-3 rounded-lg cursor-pointer mb-2 transition-colors group ${
                 selectedConversation === conv.id
                   ? "bg-sidebar-accent"
                   : "hover:bg-sidebar-accent/50"
               }`}
             >
               <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarFallback className="bg-primary/20 text-primary">
-                    {conv.is_group ? <Users className="w-5 h-5" /> : (conv.name?.[0]?.toUpperCase() || "C")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
+                <div onClick={() => handleSelectConversation(conv.id)}>
+                  <Avatar className="w-10 h-10">
+                    <AvatarFallback className="bg-primary/20 text-primary">
+                      {conv.is_group ? <Users className="w-5 h-5" /> : (conv.name?.[0]?.toUpperCase() || "C")}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="flex-1 min-w-0" onClick={() => handleSelectConversation(conv.id)}>
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-sidebar-foreground truncate">
                       {conv.name || t('chat.title')}
@@ -255,6 +258,26 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
                     Click to view messages
                   </p>
                 </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite.mutate({ conversationId: conv.id, isFavorite: conv.is_favorite });
+                      }}
+                      className={`p-1.5 rounded-full transition-all ${
+                        conv.is_favorite 
+                          ? "text-yellow-500 hover:text-yellow-600" 
+                          : "text-sidebar-muted opacity-0 group-hover:opacity-100 hover:text-yellow-500"
+                      }`}
+                    >
+                      <Star className={`w-4 h-4 ${conv.is_favorite ? "fill-current" : ""}`} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {conv.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
           ))

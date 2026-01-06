@@ -30,6 +30,7 @@ import { usePosts, useCreatePost, usePostReactions, useToggleReaction, useToggle
 import { useFriendships, useFriendRequests } from "@/hooks/useFriendships";
 import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import DocumentsSection from "@/components/DocumentsSection";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -205,58 +206,69 @@ const ProfilePage = () => {
 
         {/* Main Content */}
         <div className="flex-1 space-y-4">
-          <Card className="bg-sidebar-accent border-sidebar-border">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                <CardTitle className="text-sidebar-foreground">Feed</CardTitle>
-              </div>
-              <p className="text-sm text-sidebar-muted">View and create posts</p>
-            </CardHeader>
-          </Card>
-
-          {/* Create Post */}
-          <Card className="bg-sidebar-accent border-sidebar-border">
-            <CardContent className="pt-4">
-              <div className="flex gap-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {profile?.display_name?.[0]?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <Textarea
-                    placeholder="What's on your mind?"
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    className="bg-sidebar border-sidebar-border text-sidebar-foreground resize-none mb-3"
-                    rows={2}
-                  />
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" className="text-sidebar-muted">
-                        <Image className="w-4 h-4 mr-1" />
-                        Photo
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-sidebar-muted">
-                        <Video className="w-4 h-4 mr-1" />
-                        Video
-                      </Button>
-                    </div>
-                    <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
-                      <Send className="w-4 h-4 mr-1" />
-                      Post
-                    </Button>
+          {activeSection === "documents" ? (
+            <DocumentsSection />
+          ) : (
+            <>
+              <Card className="bg-sidebar-accent border-sidebar-border">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    <CardTitle className="text-sidebar-foreground">
+                      {activeSection === "feed" ? "Feed" : "Saved Posts"}
+                    </CardTitle>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <p className="text-sm text-sidebar-muted">
+                    {activeSection === "feed" ? "View and create posts" : "Your saved posts"}
+                  </p>
+                </CardHeader>
+              </Card>
 
-          {/* Posts */}
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} profile={profile} />
-          ))}
+              {activeSection === "feed" && (
+                <Card className="bg-sidebar-accent border-sidebar-border">
+                  <CardContent className="pt-4">
+                    <div className="flex gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {profile?.display_name?.[0]?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <Textarea
+                          placeholder="What's on your mind?"
+                          value={newPostContent}
+                          onChange={(e) => setNewPostContent(e.target.value)}
+                          className="bg-sidebar border-sidebar-border text-sidebar-foreground resize-none mb-3"
+                          rows={2}
+                        />
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" className="text-sidebar-muted">
+                              <Image className="w-4 h-4 mr-1" />
+                              Photo
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-sidebar-muted">
+                              <Video className="w-4 h-4 mr-1" />
+                              Video
+                            </Button>
+                          </div>
+                          <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
+                            <Send className="w-4 h-4 mr-1" />
+                            Post
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Posts */}
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} profile={profile} />
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
