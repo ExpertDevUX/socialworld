@@ -8,7 +8,8 @@ import {
   Star, 
   Users, 
   LogOut, 
-  Plus
+  Plus,
+  Shield
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -24,6 +25,7 @@ import {
 import { useProfile, Profile } from "@/hooks/useProfile";
 import { useConversations } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useRoles";
 import NewChatDialog from "./NewChatDialog";
 import CreateGroupDialog from "./CreateGroupDialog";
 import UserProfileDialog from "./UserProfileDialog";
@@ -47,6 +49,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
   const { data: profile } = useProfile();
   const { data: conversations = [] } = useConversations();
   const { signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
 
   const filteredConversations = conversations.filter(conv => {
@@ -135,6 +138,17 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
             >
               <User className="w-5 h-5" />
             </Button>
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-sidebar-muted hover:text-sidebar-foreground"
+                onClick={() => navigate("/admin")}
+                title="Admin Panel"
+              >
+                <Shield className="w-5 h-5" />
+              </Button>
+            )}
             <Button 
               variant="ghost" 
               size="icon" 

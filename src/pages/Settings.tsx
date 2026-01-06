@@ -11,7 +11,8 @@ import {
   Palette,
   Sun,
   Moon,
-  CheckCircle2
+  CheckCircle2,
+  Megaphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { usePhoneVerification } from "@/hooks/usePhoneVerification";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +28,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSelector from "@/components/LanguageSelector";
 
-type SettingsSection = "profile" | "password" | "phone" | "2fa" | "sessions" | "privacy" | "appearance";
+type SettingsSection = "profile" | "password" | "phone" | "2fa" | "sessions" | "privacy" | "appearance" | "ads";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -42,6 +44,7 @@ const SettingsPage = () => {
   const [status, setStatus] = useState("online");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  const [showAds, setShowAds] = useState(true);
 
   // Update local state when profile loads
   useEffect(() => {
@@ -49,6 +52,7 @@ const SettingsPage = () => {
       setDisplayName(profile.display_name);
       setUsername(profile.username);
       setStatus(profile.status || "online");
+      setShowAds(profile.show_ads ?? true);
     }
   }, [profile]);
 
@@ -96,6 +100,7 @@ const SettingsPage = () => {
 
   const preferencesMenu = [
     { id: "appearance" as const, icon: Palette, label: "Appearance", desc: "Customize how ChatFlow looks" },
+    { id: "ads" as const, icon: Megaphone, label: "Advertisements", desc: "Control ad display" },
   ];
 
   return (
@@ -583,6 +588,53 @@ const SettingsPage = () => {
                     </button>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === "ads" && (
+            <Card className="bg-sidebar-accent border-sidebar-border">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                    <Megaphone className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sidebar-foreground">Advertisements</CardTitle>
+                    <p className="text-sm text-sidebar-muted">Control advertisement display</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 rounded-lg border border-sidebar-border">
+                  <div>
+                    <p className="font-medium text-sidebar-foreground">Show Advertisements</p>
+                    <p className="text-sm text-sidebar-muted">Enable or disable advertisements in your feed</p>
+                  </div>
+                  <Switch
+                    checked={showAds}
+                    onCheckedChange={async (checked) => {
+                      setShowAds(checked);
+                      try {
+                        await updateProfile.mutateAsync({ show_ads: checked });
+                        toast({
+                          title: "Settings updated",
+                          description: checked ? "Advertisements enabled" : "Advertisements disabled",
+                        });
+                      } catch (error) {
+                        setShowAds(!checked);
+                        toast({
+                          title: "Error",
+                          description: "Failed to update settings",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-sidebar-muted">
+                  Advertisements help support the platform. You can choose to disable them if you prefer an ad-free experience.
+                </p>
               </CardContent>
             </Card>
           )}
