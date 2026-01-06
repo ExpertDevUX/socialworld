@@ -8,7 +8,8 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
-    "back": "Back"
+    "back": "Back",
+    "signOut": "Sign Out"
   },
   "auth": {
     "login": "Login",
