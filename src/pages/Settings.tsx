@@ -12,7 +12,8 @@ import {
   Sun,
   Moon,
   CheckCircle2,
-  Megaphone
+  Megaphone,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,19 +22,22 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { usePhoneVerification } from "@/hooks/usePhoneVerification";
+import { useUserRole } from "@/hooks/useRoles";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageSelector from "@/components/LanguageSelector";
 
-type SettingsSection = "profile" | "password" | "phone" | "2fa" | "sessions" | "privacy" | "appearance" | "ads";
+type SettingsSection = "profile" | "password" | "phone" | "2fa" | "sessions" | "privacy" | "appearance" | "ads" | "permissions";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: profile } = useProfile();
+  const { data: userRole } = useUserRole();
   const updateProfile = useUpdateProfile();
   const phoneVerification = usePhoneVerification();
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -101,6 +105,7 @@ const SettingsPage = () => {
   const preferencesMenu = [
     { id: "appearance" as const, icon: Palette, label: "Appearance", desc: "Customize how ChatFlow looks" },
     { id: "ads" as const, icon: Megaphone, label: "Advertisements", desc: "Control ad display" },
+    { id: "permissions" as const, icon: Lock, label: "Permissions", desc: userRole?.role ? `Role: ${userRole.role}` : "View your permissions" },
   ];
 
   return (
@@ -635,6 +640,90 @@ const SettingsPage = () => {
                 <p className="text-sm text-sidebar-muted">
                   Advertisements help support the platform. You can choose to disable them if you prefer an ad-free experience.
                 </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === "permissions" && (
+            <Card className="bg-sidebar-accent border-sidebar-border">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sidebar-foreground">Permissions & Privileges</CardTitle>
+                    <p className="text-sm text-sidebar-muted">View your account permissions</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 rounded-lg border border-sidebar-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sidebar-foreground font-medium">Current Role</span>
+                    <Badge variant={userRole?.role === 'admin' ? 'default' : userRole?.role === 'moderator' ? 'secondary' : 'outline'}>
+                      {userRole?.role || 'Standard User'}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-sidebar-muted">
+                    {userRole?.role === 'admin' 
+                      ? 'You have full administrative access to manage users, content, and settings.'
+                      : userRole?.role === 'moderator'
+                      ? 'You can moderate content and manage community guidelines.'
+                      : 'You have standard user permissions for chatting and posting.'}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sidebar-foreground">Your Permissions</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-sidebar">
+                      <span className="text-sm text-sidebar-foreground">Create posts</span>
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-sidebar">
+                      <span className="text-sm text-sidebar-foreground">Send messages</span>
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-sidebar">
+                      <span className="text-sm text-sidebar-foreground">Create groups</span>
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-sidebar">
+                      <span className="text-sm text-sidebar-foreground">Manage users</span>
+                      {userRole?.role === 'admin' ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Admin only</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-sidebar">
+                      <span className="text-sm text-sidebar-foreground">Moderate content</span>
+                      {userRole?.role === 'admin' || userRole?.role === 'moderator' ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Moderator+</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-sidebar">
+                      <span className="text-sm text-sidebar-foreground">Manage advertisements</span>
+                      {userRole?.role === 'admin' ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Admin only</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {(userRole?.role === 'admin' || userRole?.role === 'moderator') && (
+                  <Button 
+                    className="w-full" 
+                    onClick={() => navigate('/admin')}
+                  >
+                    Go to Admin Panel
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
