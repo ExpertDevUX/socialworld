@@ -131,6 +131,7 @@ export type Database = {
           is_group: boolean | null
           name: string | null
           updated_at: string
+          video_room_id: string | null
         }
         Insert: {
           created_at?: string
@@ -138,6 +139,7 @@ export type Database = {
           is_group?: boolean | null
           name?: string | null
           updated_at?: string
+          video_room_id?: string | null
         }
         Update: {
           created_at?: string
@@ -145,6 +147,7 @@ export type Database = {
           is_group?: boolean | null
           name?: string | null
           updated_at?: string
+          video_room_id?: string | null
         }
         Relationships: []
       }
