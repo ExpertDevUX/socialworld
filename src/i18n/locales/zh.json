@@ -20,7 +20,37 @@
     "noAccount": "没有账号？",
     "hasAccount": "已有账号？",
     "signInWith": "使用 {{provider}} 登录",
-    "orContinueWith": "或继续使用"
+    "orContinueWith": "或继续使用",
+    "signInToContinue": "登录以继续聊天",
+    "createYourAccount": "创建您的账户",
+    "useEmail": "使用邮箱",
+    "usePhone": "使用手机",
+    "username": "用户名",
+    "phoneNumber": "手机号码",
+    "signIn": "登录",
+    "continueWithGoogle": "使用 Google 继续",
+    "hero": {
+      "title": "随时随地与任何人连接",
+      "subtitle": "体验我们现代聊天平台带来的无缝沟通。快速、安全、专为您设计。"
+    },
+    "features": {
+      "realtime": {
+        "title": "实时消息",
+        "description": "即时消息传递"
+      },
+      "secure": {
+        "title": "端到端加密",
+        "description": "您的隐私至关重要"
+      },
+      "fast": {
+        "title": "闪电般快速",
+        "description": "优化的性能"
+      },
+      "global": {
+        "title": "全球访问",
+        "description": "全球连接"
+      }
+    }
   },
   "chat": {
     "title": "聊天",

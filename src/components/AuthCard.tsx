@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 type AuthMode = "email" | "phone";
 type AuthView = "signin" | "signup";
@@ -23,6 +24,7 @@ const AuthCard = () => {
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +35,7 @@ const AuthCard = () => {
         const { error } = await signIn(email, password);
         if (error) {
           toast({
-            title: "Error signing in",
+            title: t("common.error"),
             description: error.message,
             variant: "destructive",
           });
@@ -43,8 +45,8 @@ const AuthCard = () => {
       } else {
         if (!username.trim()) {
           toast({
-            title: "Username required",
-            description: "Please enter a username",
+            title: t("auth.username"),
+            description: t("auth.username") + " " + t("common.error").toLowerCase(),
             variant: "destructive",
           });
           setLoading(false);
@@ -53,21 +55,21 @@ const AuthCard = () => {
         const { error } = await signUp(email, password, username);
         if (error) {
           toast({
-            title: "Error signing up",
+            title: t("common.error"),
             description: error.message,
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Account created!",
-            description: "You can now sign in",
+            title: t("common.success"),
+            description: t("auth.signInToContinue"),
           });
           navigate("/chat");
         }
       }
     } catch (error) {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: "An unexpected error occurred",
         variant: "destructive",
       });
@@ -79,19 +81,22 @@ const AuthCard = () => {
   return (
     <Card className="w-full max-w-md shadow-lg border-0">
       <CardContent className="pt-8 pb-6 px-8">
-        {/* Logo */}
-        <div className="flex justify-center mb-4">
+        {/* Logo - Only visible on mobile */}
+        <div className="flex justify-center mb-4 lg:hidden">
           <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center">
             <MessageSquare className="w-7 h-7 text-primary-foreground" />
           </div>
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold text-center text-foreground mb-1">
+        <h1 className="text-2xl font-bold text-center text-foreground mb-1 lg:hidden">
           ChatFlow
         </h1>
+        <h2 className="text-2xl font-bold text-center text-foreground mb-1 hidden lg:block">
+          {authView === "signin" ? t("auth.login") : t("auth.signup")}
+        </h2>
         <p className="text-muted-foreground text-center mb-6">
-          {authView === "signin" ? "Sign in to continue chatting" : "Create your account"}
+          {authView === "signin" ? t("auth.signInToContinue") : t("auth.createYourAccount")}
         </p>
 
         {/* Auth Mode Toggle */}
@@ -106,7 +111,7 @@ const AuthCard = () => {
             }`}
           >
             <Mail className="w-4 h-4" />
-            Use Email
+            {t("auth.useEmail")}
           </button>
           <button
             type="button"
@@ -118,7 +123,7 @@ const AuthCard = () => {
             }`}
           >
             <Phone className="w-4 h-4" />
-            Use Phone
+            {t("auth.usePhone")}
           </button>
         </div>
 
@@ -127,7 +132,7 @@ const AuthCard = () => {
           {authView === "signup" && (
             <div className="space-y-2">
               <Label htmlFor="username" className="text-foreground">
-                Username
+                {t("auth.username")}
               </Label>
               <Input
                 id="username"
@@ -143,7 +148,7 @@ const AuthCard = () => {
           {authMode === "email" ? (
             <div className="space-y-2">
               <Label htmlFor="email" className="text-foreground">
-                Email
+                {t("auth.email")}
               </Label>
               <Input
                 id="email"
@@ -157,7 +162,7 @@ const AuthCard = () => {
           ) : (
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-foreground">
-                Phone Number
+                {t("auth.phoneNumber")}
               </Label>
               <Input
                 id="phone"
@@ -173,14 +178,14 @@ const AuthCard = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password" className="text-foreground">
-                Password
+                {t("auth.password")}
               </Label>
               {authView === "signin" && (
                 <a
                   href="#"
                   className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
-                  Forgot password?
+                  {t("auth.forgotPassword")}
                 </a>
               )}
             </div>
@@ -195,7 +200,7 @@ const AuthCard = () => {
           </div>
 
           <Button type="submit" className="w-full h-11 text-base font-medium" disabled={loading}>
-            {loading ? "Loading..." : authView === "signin" ? "Sign In" : "Sign Up"}
+            {loading ? t("common.loading") : authView === "signin" ? t("auth.signIn") : t("auth.signup")}
           </Button>
         </form>
 
@@ -206,7 +211,7 @@ const AuthCard = () => {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-2 text-muted-foreground">
-              Or continue with
+              {t("auth.orContinueWith")}
             </span>
           </div>
         </div>
@@ -235,31 +240,31 @@ const AuthCard = () => {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Continue with Google
+          {t("auth.continueWithGoogle")}
         </Button>
 
         {/* Toggle Auth View */}
         <p className="text-center mt-6 text-sm text-muted-foreground">
           {authView === "signin" ? (
             <>
-              Don't have an account?{" "}
+              {t("auth.noAccount")}{" "}
               <button
                 type="button"
                 onClick={() => setAuthView("signup")}
                 className="text-primary hover:text-primary/80 font-medium transition-colors"
               >
-                Sign up
+                {t("auth.signup")}
               </button>
             </>
           ) : (
             <>
-              Already have an account?{" "}
+              {t("auth.hasAccount")}{" "}
               <button
                 type="button"
                 onClick={() => setAuthView("signin")}
                 className="text-primary hover:text-primary/80 font-medium transition-colors"
               >
-                Sign in
+                {t("auth.login")}
               </button>
             </>
           )}
