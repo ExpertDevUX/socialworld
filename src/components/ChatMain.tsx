@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, MessageSquare, Users, UserPlus, MoreVertical, Phone, Video } from "lucide-react";
+import { Send, MessageSquare, Users, UserPlus, MoreVertical, Phone, Video, Smile, Heart, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useMessages, useSendMessage } from "@/hooks/useMessages";
 import { useAllProfiles, Profile } from "@/hooks/useProfile";
 import { useProfile } from "@/hooks/useProfile";
@@ -26,6 +31,9 @@ interface ChatMainProps {
   conversationId: string | null;
 }
 
+// Quick emoji reactions
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🎉"];
+
 const ChatMain = ({ conversationId }: ChatMainProps) => {
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
@@ -34,6 +42,8 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [messageReactions, setMessageReactions] = useState<Record<string, string[]>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { data: messages = [] } = useMessages(conversationId);
@@ -116,6 +126,23 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
     await declineCall(callerName);
   };
 
+  const handleReaction = (messageId: string, emoji: string) => {
+    setMessageReactions(prev => {
+      const current = prev[messageId] || [];
+      if (current.includes(emoji)) {
+        // Remove reaction
+        return { ...prev, [messageId]: current.filter(e => e !== emoji) };
+      } else {
+        // Add reaction
+        return { ...prev, [messageId]: [...current, emoji] };
+      }
+    });
+  };
+
+  const addEmojiToMessage = (emoji: string) => {
+    setMessage(prev => prev + emoji);
+  };
+
   if (!conversationId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-background p-4 ml-0 md:ml-0">
@@ -157,13 +184,14 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {/* Voice Call Button */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => handleStartCall(false)}
               title={t('chat.voiceCall')}
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Phone className="w-5 h-5" />
             </Button>
@@ -174,6 +202,7 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
               size="icon"
               onClick={() => handleStartCall(true)}
               title={t('chat.videoCall')}
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Video className="w-5 h-5" />
             </Button>
@@ -181,7 +210,7 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
             {currentConversation.is_group && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
                     <MoreVertical className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -202,11 +231,14 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
         {messages.map((msg) => {
           const isOwn = msg.sender_id === user?.id;
           const senderProfile = getProfile(msg.sender_id);
+          const reactions = messageReactions[msg.id] || [];
 
           return (
             <div
               key={msg.id}
               className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}
+              onMouseEnter={() => setHoveredMessageId(msg.id)}
+              onMouseLeave={() => setHoveredMessageId(null)}
             >
               <button
                 onClick={() => handleAvatarClick(msg.sender_id)}
@@ -223,22 +255,58 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
                   )}`}
                 />
               </button>
-              <div
-                className={`max-w-md px-4 py-2 rounded-2xl ${
-                  isOwn
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-secondary text-secondary-foreground rounded-bl-md"
-                }`}
-              >
-                {currentConversation?.is_group && !isOwn && (
-                  <p className="text-xs font-medium mb-1 opacity-70">
-                    {senderProfile?.display_name || "Unknown"}
-                  </p>
+              <div className="relative group">
+                <div
+                  className={`max-w-md px-4 py-2 rounded-2xl ${
+                    isOwn
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-secondary text-secondary-foreground rounded-bl-md"
+                  }`}
+                >
+                  {currentConversation?.is_group && !isOwn && (
+                    <p className="text-xs font-medium mb-1 opacity-70">
+                      {senderProfile?.display_name || "Unknown"}
+                    </p>
+                  )}
+                  <p>{msg.content}</p>
+                  <span className={`text-xs ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+                
+                {/* Reactions display */}
+                {reactions.length > 0 && (
+                  <div className={`flex gap-0.5 mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
+                    {reactions.map((emoji, idx) => (
+                      <span 
+                        key={idx} 
+                        className="text-sm bg-secondary/80 rounded-full px-1.5 py-0.5 cursor-pointer hover:bg-secondary"
+                        onClick={() => handleReaction(msg.id, emoji)}
+                      >
+                        {emoji}
+                      </span>
+                    ))}
+                  </div>
                 )}
-                <p>{msg.content}</p>
-                <span className={`text-xs ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
+
+                {/* Reaction picker - shows on hover */}
+                {hoveredMessageId === msg.id && (
+                  <div 
+                    className={`absolute -top-8 flex items-center gap-0.5 bg-popover border border-border rounded-full px-1 py-0.5 shadow-lg z-10 ${
+                      isOwn ? "right-0" : "left-0"
+                    }`}
+                  >
+                    {QUICK_REACTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(msg.id, emoji)}
+                        className="hover:bg-accent rounded-full p-1 transition-transform hover:scale-125"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -249,6 +317,28 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
       {/* Input */}
       <form onSubmit={handleSend} className="p-4 border-t border-border">
         <div className="flex items-center gap-2">
+          {/* Emoji picker for input */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                <Smile className="w-5 h-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" side="top" align="start">
+              <div className="grid grid-cols-6 gap-1">
+                {["😀", "😂", "🥰", "😎", "🤔", "😢", "😡", "👍", "👎", "❤️", "🔥", "🎉", "✨", "💯", "🙏", "👏", "🤝", "💪"].map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => addEmojiToMessage(emoji)}
+                    className="text-xl p-1 hover:bg-accent rounded transition-transform hover:scale-125"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Input
             placeholder={t('chat.typeMessage')}
             value={message}
