@@ -166,13 +166,17 @@ const SettingsPage = () => {
                 <Button
                   key={item.id}
                   variant={activeSection === item.id ? "default" : "ghost"}
-                  className="w-full justify-start h-auto py-3"
+                  className="w-full justify-start h-auto py-3 group"
                   onClick={() => setActiveSection(item.id)}
                 >
                   <item.icon className="w-5 h-5 mr-3 shrink-0" />
                   <div className="text-left min-w-0">
                     <p className="font-medium">{item.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{item.desc}</p>
+                    <p className={`text-xs truncate transition-colors ${
+                      activeSection === item.id 
+                        ? 'text-primary-foreground/80' 
+                        : 'text-muted-foreground group-hover:text-foreground'
+                    }`}>{item.desc}</p>
                   </div>
                 </Button>
               ))}
@@ -189,13 +193,17 @@ const SettingsPage = () => {
                 <Button
                   key={item.id}
                   variant={activeSection === item.id ? "default" : "ghost"}
-                  className="w-full justify-start h-auto py-3"
+                  className="w-full justify-start h-auto py-3 group"
                   onClick={() => setActiveSection(item.id)}
                 >
                   <item.icon className="w-5 h-5 mr-3 shrink-0" />
                   <div className="text-left min-w-0">
                     <p className="font-medium">{item.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{item.desc}</p>
+                    <p className={`text-xs truncate transition-colors ${
+                      activeSection === item.id 
+                        ? 'text-primary-foreground/80' 
+                        : 'text-muted-foreground group-hover:text-foreground'
+                    }`}>{item.desc}</p>
                   </div>
                 </Button>
               ))}
