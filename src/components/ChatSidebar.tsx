@@ -111,7 +111,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <NotificationDropdown onNavigateToConversation={onSelectConversation} />
+              
               <Button 
                 variant="ghost" 
                 size="icon" 
