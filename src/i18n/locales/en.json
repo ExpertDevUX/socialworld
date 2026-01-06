@@ -254,6 +254,11 @@
     "enterGroupName": "Enter group name...",
     "addMembersOptional": "Add Members (optional)",
     "creating": "Creating...",
-    "createGroup": "Create Group"
+    "createGroup": "Create Group",
+    "createGroupDesc": "Create a new group conversation and add members",
+    "groupCreated": "Group Created",
+    "groupCreatedDesc": "\"{{name}}\" has been created successfully",
+    "groupCreationFailed": "Failed to create group",
+    "tryAgain": "Please try again"
   }
 }

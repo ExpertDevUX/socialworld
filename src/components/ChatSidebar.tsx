@@ -162,13 +162,21 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sidebar-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder={t('chat.searchConversations')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-sidebar-accent border border-sidebar-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
+            className="pl-9 pr-9 bg-sidebar-accent border border-sidebar-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
