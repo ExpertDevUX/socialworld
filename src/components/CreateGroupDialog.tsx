@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useAllProfiles } from "@/hooks/useProfile";
 import { useCreateGroupConversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface CreateGroupDialogProps {
   open: boolean;
@@ -54,12 +56,19 @@ const CreateGroupDialog = ({ open, onOpenChange, onGroupCreated }: CreateGroupDi
         name: groupName,
         participantUserIds: selectedUsers,
       });
+      toast.success(t('groups.groupCreated'), {
+        description: t('groups.groupCreatedDesc', { name: groupName }),
+      });
       onGroupCreated(conversation.id);
       onOpenChange(false);
       setGroupName("");
       setSelectedUsers([]);
+      setSearchQuery("");
     } catch (error) {
       console.error("Failed to create group:", error);
+      toast.error(t('groups.groupCreationFailed'), {
+        description: t('groups.tryAgain'),
+      });
     }
   };
 
@@ -71,6 +80,9 @@ const CreateGroupDialog = ({ open, onOpenChange, onGroupCreated }: CreateGroupDi
             <Users className="w-5 h-5" />
             {t('chat.createGroup')}
           </DialogTitle>
+          <DialogDescription>
+            {t('groups.createGroupDesc')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
