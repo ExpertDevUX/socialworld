@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import ForgotPasswordDialog from "./ForgotPasswordDialog";
 
 type AuthMode = "email" | "phone";
 type AuthView = "signin" | "signup";
@@ -20,7 +21,7 @@ const AuthCard = () => {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -181,12 +182,13 @@ const AuthCard = () => {
                 {t("auth.password")}
               </Label>
               {authView === "signin" && (
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(true)}
                   className="text-sm text-primary hover:text-primary/80 transition-colors"
                 >
                   {t("auth.forgotPassword")}
-                </a>
+                </button>
               )}
             </div>
             <Input
@@ -269,6 +271,11 @@ const AuthCard = () => {
             </>
           )}
         </p>
+
+        <ForgotPasswordDialog 
+          open={forgotPasswordOpen} 
+          onOpenChange={setForgotPasswordOpen} 
+        />
       </CardContent>
     </Card>
   );

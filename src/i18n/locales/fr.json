@@ -7,7 +7,8 @@
     "search": "Rechercher",
     "loading": "Chargement...",
     "error": "Erreur",
-    "success": "Succès"
+    "success": "Succès",
+    "back": "Retour"
   },
   "auth": {
     "login": "Connexion",
@@ -50,6 +51,26 @@
         "title": "Accès mondial",
         "description": "Connectez-vous mondialement"
       }
+    },
+    "backToLogin": "Retour à la connexion",
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "emailDesc": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+      "phoneDesc": "Entrez votre numéro de téléphone et nous vous enverrons un code de vérification.",
+      "sendLink": "Envoyer le lien",
+      "sendCode": "Envoyer le code",
+      "emailSent": "E-mail envoyé !",
+      "checkEmail": "Vérifiez votre e-mail pour le lien de réinitialisation",
+      "emailSentDesc": "Nous avons envoyé un lien de réinitialisation de mot de passe à votre e-mail. Veuillez vérifier votre boîte de réception.",
+      "phoneVerified": "Téléphone vérifié !",
+      "phoneVerifiedDesc": "Vous pouvez maintenant définir un nouveau mot de passe pour votre compte.",
+      "newPassword": "Nouveau mot de passe",
+      "enterNewPassword": "Entrez votre nouveau mot de passe ci-dessous",
+      "updatePassword": "Mettre à jour le mot de passe",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "passwordTooShort": "Le mot de passe doit comporter au moins 6 caractères",
+      "passwordUpdated": "Mot de passe mis à jour",
+      "canNowLogin": "Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
     }
   },
   "chat": {

@@ -7,7 +7,8 @@
     "search": "Search",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "back": "Back"
   },
   "auth": {
     "login": "Login",
@@ -50,6 +51,26 @@
         "title": "Global Access",
         "description": "Connect worldwide"
       }
+    },
+    "backToLogin": "Back to Login",
+    "resetPassword": {
+      "title": "Reset Password",
+      "emailDesc": "Enter your email address and we'll send you a link to reset your password.",
+      "phoneDesc": "Enter your phone number and we'll send you a verification code.",
+      "sendLink": "Send Reset Link",
+      "sendCode": "Send Code",
+      "emailSent": "Email sent!",
+      "checkEmail": "Check your email for the reset link",
+      "emailSentDesc": "We've sent a password reset link to your email. Please check your inbox and follow the instructions.",
+      "phoneVerified": "Phone verified!",
+      "phoneVerifiedDesc": "You can now set a new password for your account.",
+      "newPassword": "New Password",
+      "enterNewPassword": "Enter your new password below",
+      "updatePassword": "Update Password",
+      "passwordMismatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "passwordUpdated": "Password Updated",
+      "canNowLogin": "Your password has been updated. You can now sign in with your new password."
     }
   },
   "chat": {
