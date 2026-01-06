@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ChatSidebar from "@/components/ChatSidebar";
 import ChatMain from "@/components/ChatMain";
+import Header from "@/components/Header";
 import { useRealtimeProfiles } from "@/hooks/useRealtimeProfiles";
 
 const ChatPage = () => {
@@ -11,6 +12,7 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-screen">
+      <Header />
       <ChatSidebar
         selectedConversation={selectedConversation}
         onSelectConversation={setSelectedConversation}
