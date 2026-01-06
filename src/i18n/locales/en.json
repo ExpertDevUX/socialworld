@@ -185,6 +185,8 @@
     "roleUser": "User",
     "roleModerator": "Moderator",
     "roleAdmin": "Admin",
+    "filterByRole": "Filter by role",
+    "allRoles": "All Roles",
     "noPosts": "No posts to manage",
     "noAds": "No advertisements yet",
     "noActivityLogs": "No activity logs yet",

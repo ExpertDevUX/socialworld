@@ -76,6 +76,7 @@ const Admin = () => {
   const { isAdmin, isLoading } = useIsAdmin();
   
   const [userSearch, setUserSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<AppRole | "all" | "none">("all");
   const [adDialogOpen, setAdDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<any>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -133,11 +134,19 @@ const Admin = () => {
     );
   }
 
-  const filteredProfiles = profiles.filter(
-    (p) =>
+  const filteredProfiles = profiles.filter((p) => {
+    const matchesSearch =
       p.username.toLowerCase().includes(userSearch.toLowerCase()) ||
-      p.display_name.toLowerCase().includes(userSearch.toLowerCase())
-  );
+      p.display_name.toLowerCase().includes(userSearch.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    if (roleFilter === "all") return true;
+    
+    const userRole = getUserRole(p.user_id);
+    if (roleFilter === "none") return userRole === null;
+    return userRole === roleFilter;
+  });
 
   const getUserRole = (userId: string): AppRole | null => {
     const role = userRoles.find((r) => r.user_id === userId);
@@ -542,6 +551,19 @@ const Admin = () => {
                       className="pl-10"
                     />
                   </div>
+                  <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as AppRole | "all" | "none")}>
+                    <SelectTrigger className="w-44">
+                      <Shield className="w-4 h-4 mr-2" />
+                      <SelectValue placeholder={t("admin.filterByRole")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("admin.allRoles")}</SelectItem>
+                      <SelectItem value="none">{t("admin.noRole")}</SelectItem>
+                      <SelectItem value="user">{t("admin.roleUser")}</SelectItem>
+                      <SelectItem value="moderator">{t("admin.roleModerator")}</SelectItem>
+                      <SelectItem value="admin">{t("admin.roleAdmin")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 {/* Bulk Actions */}
                 {selectedUsers.length > 0 && (
