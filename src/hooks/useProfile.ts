@@ -51,8 +51,24 @@ export function useUpdateProfile() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      
+      // Immediately update cache for real-time feel
+      if (data) {
+        queryClient.setQueryData<Profile>(['profile', data.user_id], data);
+      }
+    },
+  });
+}
+
+export function useUpdateStatus() {
+  const updateProfile = useUpdateProfile();
+
+  return useMutation({
+    mutationFn: async (status: string) => {
+      return updateProfile.mutateAsync({ status });
     },
   });
 }
