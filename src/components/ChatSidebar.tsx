@@ -2,7 +2,6 @@ import { useState } from "react";
 import { 
   Search, 
   Edit, 
-  Bell, 
   User, 
   Settings, 
   Star, 
@@ -32,6 +31,10 @@ import UserProfileDialog from "./UserProfileDialog";
 import ThemeToggle from "./ThemeToggle";
 import LanguageSelector from "./LanguageSelector";
 import AdBanner from "./AdBanner";
+import NotificationDropdown from "./NotificationDropdown";
+import StatusSelector from "./StatusSelector";
+import StatusIndicator from "./StatusIndicator";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface ChatSidebarProps {
   selectedConversation: string | null;
@@ -67,99 +70,77 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
     navigate("/");
   };
 
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case "online":
-        return "bg-green-500";
-      case "away":
-        return "bg-yellow-500";
-      case "busy":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
+  const handleViewProfile = () => {
+    if (profile) {
+      setSelectedUserProfile(profile as Profile);
+      setProfileDialogOpen(true);
     }
   };
 
   return (
-    <div className="w-80 h-screen bg-sidebar flex flex-col border-r border-sidebar-border">
-      {/* Header */}
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => {
-                if (profile) {
-                  setSelectedUserProfile(profile as Profile);
-                  setProfileDialogOpen(true);
-                }
-              }} 
-              className="relative"
-            >
-              <Avatar className="w-10 h-10 bg-primary cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {profile?.display_name?.[0]?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-sidebar ${getStatusColor(profile?.status)}`}></span>
-            </button>
-            <div>
-              <h2 className="font-semibold text-sidebar-foreground">{t('chat.title')}</h2>
-              <span className="text-xs text-primary flex items-center gap-1 capitalize">
-                <span className={`w-2 h-2 rounded-full ${getStatusColor(profile?.status)}`}></span>
-                {t(`profile.${profile?.status || 'online'}`)}
-              </span>
+    <TooltipProvider>
+      <div className="w-80 h-screen bg-sidebar flex flex-col border-r border-sidebar-border">
+        {/* Header */}
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <StatusSelector onProfileClick={handleViewProfile} />
+              <div>
+                <h2 className="font-semibold text-sidebar-foreground">{t('chat.title')}</h2>
+                <span className="text-xs text-primary flex items-center gap-1 capitalize">
+                  <StatusIndicator status={profile?.status} size="sm" showTooltip={false} />
+                  {t(`profile.${profile?.status || 'online'}`)}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border">
-                <DropdownMenuItem onClick={() => setNewChatOpen(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  {t('chat.newChat')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCreateGroupOpen(true)}>
-                  <Users className="w-4 h-4 mr-2" />
-                  {t('chat.createGroup')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
-              <Bell className="w-5 h-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-sidebar-muted hover:text-sidebar-foreground"
-              onClick={() => navigate("/profile")}
-            >
-              <User className="w-5 h-5" />
-            </Button>
-            {isAdmin && (
+            <div className="flex items-center gap-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground">
+                    <Plus className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border">
+                  <DropdownMenuItem onClick={() => setNewChatOpen(true)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    {t('chat.newChat')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setCreateGroupOpen(true)}>
+                    <Users className="w-4 h-4 mr-2" />
+                    {t('chat.createGroup')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <NotificationDropdown onNavigateToConversation={onSelectConversation} />
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className="text-sidebar-muted hover:text-sidebar-foreground"
-                onClick={() => navigate("/admin")}
-                title="Admin Panel"
+                onClick={() => navigate("/profile")}
               >
-                <Shield className="w-5 h-5" />
+                <User className="w-5 h-5" />
               </Button>
-            )}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-sidebar-muted hover:text-sidebar-foreground"
-              onClick={() => navigate("/settings")}
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
+              {isAdmin && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-sidebar-muted hover:text-sidebar-foreground"
+                  onClick={() => navigate("/admin")}
+                  title="Admin Panel"
+                >
+                  <Shield className="w-5 h-5" />
+                </Button>
+              )}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-sidebar-muted hover:text-sidebar-foreground"
+                onClick={() => navigate("/settings")}
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
-        </div>
 
         {/* Search */}
         <div className="relative">
@@ -273,15 +254,16 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
         </div>
       </div>
 
-      <NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} onConversationCreated={onSelectConversation} />
-      <CreateGroupDialog open={createGroupOpen} onOpenChange={setCreateGroupOpen} onGroupCreated={onSelectConversation} />
-      <UserProfileDialog 
-        open={profileDialogOpen} 
-        onOpenChange={setProfileDialogOpen} 
-        profile={selectedUserProfile}
-        onStartChat={onSelectConversation}
-      />
-    </div>
+        <NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} onConversationCreated={onSelectConversation} />
+        <CreateGroupDialog open={createGroupOpen} onOpenChange={setCreateGroupOpen} onGroupCreated={onSelectConversation} />
+        <UserProfileDialog 
+          open={profileDialogOpen} 
+          onOpenChange={setProfileDialogOpen} 
+          profile={selectedUserProfile}
+          onStartChat={onSelectConversation}
+        />
+      </div>
+    </TooltipProvider>
   );
 };
 
