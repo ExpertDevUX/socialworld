@@ -11,6 +11,7 @@ import {
   Plus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,6 +36,7 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebarProps) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "favorites" | "groups">("all");
   const [newChatOpen, setNewChatOpen] = useState(false);
@@ -97,10 +99,10 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
               <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-sidebar ${getStatusColor(profile?.status)}`}></span>
             </button>
             <div>
-              <h2 className="font-semibold text-sidebar-foreground">Chats</h2>
+              <h2 className="font-semibold text-sidebar-foreground">{t('chat.title')}</h2>
               <span className="text-xs text-primary flex items-center gap-1 capitalize">
                 <span className={`w-2 h-2 rounded-full ${getStatusColor(profile?.status)}`}></span>
-                {profile?.status || "online"}
+                {t(`profile.${profile?.status || 'online'}`)}
               </span>
             </div>
           </div>
@@ -114,11 +116,11 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
               <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border">
                 <DropdownMenuItem onClick={() => setNewChatOpen(true)}>
                   <Edit className="w-4 h-4 mr-2" />
-                  New Chat
+                  {t('chat.newChat')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setCreateGroupOpen(true)}>
                   <Users className="w-4 h-4 mr-2" />
-                  Create Group
+                  {t('chat.createGroup')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -148,7 +150,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sidebar-muted" />
           <Input
-            placeholder="Search conversations..."
+            placeholder={t('chat.searchConversations')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 bg-sidebar-accent border-0 text-sidebar-foreground placeholder:text-sidebar-muted"
@@ -164,7 +166,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           onClick={() => setActiveTab("all")}
           className={activeTab === "all" ? "" : "text-sidebar-muted hover:text-sidebar-foreground"}
         >
-          All
+          {t('chat.all')}
         </Button>
         <Button
           variant={activeTab === "favorites" ? "default" : "ghost"}
@@ -173,7 +175,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           className={activeTab === "favorites" ? "" : "text-sidebar-muted hover:text-sidebar-foreground"}
         >
           <Star className="w-4 h-4 mr-1" />
-          Favorites
+          {t('chat.favorites')}
         </Button>
         <Button
           variant={activeTab === "groups" ? "default" : "ghost"}
@@ -182,7 +184,7 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
           className={activeTab === "groups" ? "" : "text-sidebar-muted hover:text-sidebar-foreground"}
         >
           <Users className="w-4 h-4 mr-1" />
-          Groups
+          {t('chat.groups')}
         </Button>
       </div>
 
@@ -191,14 +193,14 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
         {filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-sidebar-muted">
             <Users className="w-12 h-12 mb-2 opacity-50" />
-            <p>No conversations found</p>
+            <p>{t('chat.noConversations')}</p>
             <Button 
               variant="link" 
               size="sm" 
               onClick={() => activeTab === "groups" ? setCreateGroupOpen(true) : setNewChatOpen(true)}
               className="mt-2"
             >
-              {activeTab === "groups" ? "Create a group" : "Start a chat"}
+              {activeTab === "groups" ? t('chat.createAGroup') : t('chat.startChat')}
             </Button>
           </div>
         ) : (
@@ -221,10 +223,10 @@ const ChatSidebar = ({ selectedConversation, onSelectConversation }: ChatSidebar
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-sidebar-foreground truncate">
-                      {conv.name || "Chat"}
+                      {conv.name || t('chat.title')}
                     </h3>
                     {conv.is_group && (
-                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">Group</span>
+                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">{t('chat.group')}</span>
                     )}
                   </div>
                   <p className="text-sm text-sidebar-muted truncate">

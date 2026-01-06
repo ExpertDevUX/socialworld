@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Languages, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,32 +6,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
 
 const languages = [
   { code: "en", name: "English", flag: "🇺🇸" },
   { code: "es", name: "Español", flag: "🇪🇸" },
   { code: "fr", name: "Français", flag: "🇫🇷" },
-  { code: "de", name: "Deutsch", flag: "🇩🇪" },
-  { code: "pt", name: "Português", flag: "🇧🇷" },
   { code: "zh", name: "中文", flag: "🇨🇳" },
-  { code: "ja", name: "日本語", flag: "🇯🇵" },
-  { code: "ko", name: "한국어", flag: "🇰🇷" },
-  { code: "ar", name: "العربية", flag: "🇸🇦" },
-  { code: "hi", name: "हिन्दी", flag: "🇮🇳" },
 ];
 
 const LanguageSelector = () => {
-  const [currentLanguage, setCurrentLanguage] = useState(() => {
-    return localStorage.getItem("language") || "en";
-  });
+  const { i18n } = useTranslation();
+  const currentLanguage = i18n.language?.split('-')[0] || 'en';
 
   const handleLanguageChange = (code: string) => {
-    setCurrentLanguage(code);
-    localStorage.setItem("language", code);
-    // In a real app, this would trigger i18n context update
+    i18n.changeLanguage(code);
   };
 
-  const currentLang = languages.find((l) => l.code === currentLanguage);
+  const currentLang = languages.find((l) => l.code === currentLanguage) || languages[0];
 
   return (
     <DropdownMenu>
@@ -41,7 +32,7 @@ const LanguageSelector = () => {
           <Languages className="w-5 h-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border max-h-64 overflow-y-auto">
+      <DropdownMenuContent align="end" className="bg-sidebar border-sidebar-border">
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}

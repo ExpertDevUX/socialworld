@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Users, Check, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ interface CreateGroupDialogProps {
 }
 
 const CreateGroupDialog = ({ open, onOpenChange, onGroupCreated }: CreateGroupDialogProps) => {
+  const { t } = useTranslation();
   const [groupName, setGroupName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,15 +69,15 @@ const CreateGroupDialog = ({ open, onOpenChange, onGroupCreated }: CreateGroupDi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Create Group Chat
+            {t('chat.createGroup')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <Label className="text-sidebar-foreground">Group Name</Label>
+            <Label className="text-sidebar-foreground">{t('groups.groupName')}</Label>
             <Input
-              placeholder="Enter group name..."
+              placeholder={t('groups.enterGroupName')}
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               className="mt-1 bg-sidebar-accent border-primary/30 focus:border-primary text-sidebar-foreground"
@@ -83,9 +85,9 @@ const CreateGroupDialog = ({ open, onOpenChange, onGroupCreated }: CreateGroupDi
           </div>
 
           <div>
-            <Label className="text-sidebar-foreground">Add Members (optional)</Label>
+            <Label className="text-sidebar-foreground">{t('groups.addMembersOptional')}</Label>
             <Input
-              placeholder="Search users to add..."
+              placeholder={t('users.searchUsersToAdd')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="mt-1 bg-sidebar-accent border-primary/30 focus:border-primary text-sidebar-foreground placeholder:text-sidebar-muted"
@@ -148,7 +150,7 @@ const CreateGroupDialog = ({ open, onOpenChange, onGroupCreated }: CreateGroupDi
             className="w-full"
           >
             <Plus className="w-4 h-4 mr-2" />
-            {createGroup.isPending ? "Creating..." : "Create Group"}
+            {createGroup.isPending ? t('groups.creating') : t('groups.createGroup')}
           </Button>
         </div>
       </DialogContent>

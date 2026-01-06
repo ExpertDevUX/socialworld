@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, MessageSquare, Users, UserPlus, MoreVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,6 +23,7 @@ interface ChatMainProps {
 }
 
 const ChatMain = ({ conversationId }: ChatMainProps) => {
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [addMembersOpen, setAddMembersOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
@@ -88,9 +90,9 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
         <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mb-6">
           <MessageSquare className="w-10 h-10 text-primary-foreground" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to ChatFlow</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-2">{t('chat.welcome')}</h2>
         <p className="text-muted-foreground text-center max-w-md">
-          Select a conversation from the sidebar or start a new chat to begin messaging
+          {t('chat.welcomeSubtitle')}
         </p>
       </div>
     );
@@ -113,11 +115,11 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
             </Avatar>
             <div>
               <h3 className="font-semibold text-foreground">
-                {currentConversation.name || "Chat"}
+                {currentConversation.name || t('chat.title')}
               </h3>
               {currentConversation.is_group && (
                 <p className="text-sm text-muted-foreground">
-                  {participants.length} member{participants.length !== 1 ? "s" : ""}
+                  {t('chat.members', { count: participants.length })}
                 </p>
               )}
             </div>
@@ -133,7 +135,7 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setAddMembersOpen(true)}>
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Add Members
+                  {t('chat.addMembers')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -194,7 +196,7 @@ const ChatMain = ({ conversationId }: ChatMainProps) => {
       <form onSubmit={handleSend} className="p-4 border-t border-border">
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Type a message..."
+            placeholder={t('chat.typeMessage')}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             className="flex-1"
