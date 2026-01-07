@@ -37,26 +37,42 @@ const FindFriendsDialog = ({ open, onOpenChange }: FindFriendsDialogProps) => {
   const { data: friendships = [] } = useFriendships();
   const sendFriendRequest = useSendFriendRequest();
 
+  // Escape special ILIKE pattern characters to prevent SQL injection
+  const escapeILikePattern = (str: string): string => {
+    // Escape special characters that have meaning in ILIKE patterns: % _ \ 
+    return str.replace(/[%_\\]/g, '\\$&');
+  };
+
+  // Validate and sanitize search input
+  const sanitizeSearchQuery = (query: string): string | null => {
+    const trimmed = query.trim();
+    // Limit length to prevent abuse
+    if (trimmed.length < 2 || trimmed.length > 50) return null;
+    return escapeILikePattern(trimmed);
+  };
+
   // Search by email requires looking up auth.users, which we can't do directly
   // So we'll search by username/display_name in profiles, or by phone_number
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
     queryKey: ['searchUsers', searchQuery, searchType],
     queryFn: async () => {
-      if (!searchQuery.trim() || searchQuery.length < 2) return [];
+      const sanitizedQuery = sanitizeSearchQuery(searchQuery);
+      if (!sanitizedQuery) return [];
 
       let query = supabase.from('profiles').select('*');
 
       if (searchType === 'username') {
         // Search by username or display name (case-insensitive)
-        query = query.or(`username.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`);
+        query = query.or(`username.ilike.%${sanitizedQuery}%,display_name.ilike.%${sanitizedQuery}%`);
       } else if (searchType === 'phone') {
         // Search by phone number
-        query = query.ilike('phone_number', `%${searchQuery}%`);
+        query = query.ilike('phone_number', `%${sanitizedQuery}%`);
       } else if (searchType === 'email') {
         // For email search, we search by username since emails are not in profiles
         // The user might type their email username part
-        const emailPart = searchQuery.split('@')[0];
-        query = query.or(`username.ilike.%${emailPart}%,display_name.ilike.%${emailPart}%`);
+        const emailPart = sanitizedQuery.split('@')[0];
+        const sanitizedEmailPart = escapeILikePattern(emailPart);
+        query = query.or(`username.ilike.%${sanitizedEmailPart}%,display_name.ilike.%${sanitizedEmailPart}%`);
       }
 
       const { data, error } = await query.limit(20);

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -114,6 +115,42 @@ serve(async (req) => {
   }
 
   try {
+    // Check for authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error('Missing or invalid authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with service role for verification
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify the user's JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error('Invalid token:', claimsError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+    if (!userId) {
+      console.error('No user ID in claims');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const AGORA_APP_ID = Deno.env.get('AGORA_APP_ID');
     const AGORA_APP_CERTIFICATE = Deno.env.get('AGORA_APP_CERTIFICATE');
 
@@ -127,6 +164,45 @@ serve(async (req) => {
       throw new Error('Channel name is required');
     }
 
+    // Validate channelName format (basic alphanumeric and dash/underscore check)
+    if (!/^[a-zA-Z0-9_-]+$/.test(channelName)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid channel name format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify that the user is a participant in the conversation with this video_room_id
+    const { data: conversation, error: convError } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('video_room_id', channelName)
+      .single();
+
+    if (convError || !conversation) {
+      console.error('Conversation not found for channel:', channelName, convError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid channel' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if user is a participant in this conversation
+    const { data: participant, error: partError } = await supabase
+      .from('conversation_participants')
+      .select('id')
+      .eq('conversation_id', conversation.id)
+      .eq('user_id', userId)
+      .single();
+
+    if (partError || !participant) {
+      console.error('User not a participant in conversation:', userId, partError);
+      return new Response(
+        JSON.stringify({ error: 'Forbidden - not a participant' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Token expires in 1 hour
     const expirationTimeInSeconds = 3600;
     const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -136,7 +212,7 @@ serve(async (req) => {
     const rtcRole = role === 'audience' ? Role.SUBSCRIBER : Role.PUBLISHER;
 
     // Generate the token
-    const token = buildToken(
+    const agoraToken = buildToken(
       AGORA_APP_ID,
       AGORA_APP_CERTIFICATE,
       channelName,
@@ -145,11 +221,11 @@ serve(async (req) => {
       privilegeExpiredTs
     );
 
-    console.log(`Token generated for channel: ${channelName}, uid: ${uid}`);
+    console.log(`Token generated for channel: ${channelName}, uid: ${uid}, user: ${userId}`);
 
     return new Response(
       JSON.stringify({ 
-        token, 
+        token: agoraToken, 
         appId: AGORA_APP_ID,
         channel: channelName,
         uid
