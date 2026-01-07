@@ -7,6 +7,50 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 token requests per minute per user
+
+// In-memory rate limiting store
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const userLimit = rateLimitStore.get(userId);
+
+  // Clean up expired entries periodically (10% chance on each request)
+  if (Math.random() < 0.1) {
+    for (const [key, value] of rateLimitStore.entries()) {
+      if (now > value.resetTime) {
+        rateLimitStore.delete(key);
+      }
+    }
+  }
+
+  if (!userLimit || now > userLimit.resetTime) {
+    // First request or window expired
+    rateLimitStore.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    // Rate limit exceeded
+    return { 
+      allowed: false, 
+      remaining: 0, 
+      resetIn: userLimit.resetTime - now 
+    };
+  }
+
+  // Increment count
+  userLimit.count++;
+  return { 
+    allowed: true, 
+    remaining: RATE_LIMIT_MAX_REQUESTS - userLimit.count, 
+    resetIn: userLimit.resetTime - now 
+  };
+}
+
 // Agora Token Generation (RTC Token Builder)
 const Role = {
   PUBLISHER: 1,
@@ -151,6 +195,33 @@ serve(async (req) => {
       );
     }
 
+    // Check rate limit
+    const rateLimit = checkRateLimit(userId);
+    const rateLimitHeaders = {
+      'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+      'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+      'X-RateLimit-Reset': Math.ceil(rateLimit.resetIn / 1000).toString(),
+    };
+
+    if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded for user ${userId}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Too many requests. Please try again later.',
+          retryAfter: Math.ceil(rateLimit.resetIn / 1000)
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            ...rateLimitHeaders,
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil(rateLimit.resetIn / 1000).toString()
+          } 
+        }
+      );
+    }
+
     const AGORA_APP_ID = Deno.env.get('AGORA_APP_ID');
     const AGORA_APP_CERTIFICATE = Deno.env.get('AGORA_APP_CERTIFICATE');
 
@@ -231,7 +302,7 @@ serve(async (req) => {
         uid
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, ...rateLimitHeaders, 'Content-Type': 'application/json' } 
       }
     );
   } catch (error: unknown) {
