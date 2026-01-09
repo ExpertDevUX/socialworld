@@ -76,14 +76,43 @@ export const useAgoraCall = () => {
     return clientRef.current;
   }, []);
 
-  // Get token from edge function
-  const getToken = async (channelName: string, uid: number) => {
-    const { data, error } = await supabase.functions.invoke('agora-token', {
-      body: { channelName, uid, role: 'publisher' }
-    });
+  // Get token from edge function with exponential backoff retry
+  const getToken = async (channelName: string, uid: number, maxRetries = 3) => {
+    let lastError: Error | null = null;
     
-    if (error) throw new Error('Failed to get token');
-    return data;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const { data, error } = await supabase.functions.invoke('agora-token', {
+        body: { channelName, uid, role: 'publisher' }
+      });
+      
+      if (!error) {
+        return data;
+      }
+      
+      // Check if it's a rate limit error (429)
+      const isRateLimited = error.message?.includes('429') || 
+                            error.message?.toLowerCase().includes('rate limit') ||
+                            error.message?.toLowerCase().includes('too many requests');
+      
+      if (!isRateLimited || attempt === maxRetries) {
+        throw new Error(error.message || 'Failed to get token');
+      }
+      
+      lastError = new Error(error.message);
+      
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt) * 1000;
+      console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      
+      toast({
+        title: "Rate limited",
+        description: `Retrying in ${delay / 1000}s...`,
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    
+    throw lastError || new Error('Failed to get token after retries');
   };
 
   // Join a call
